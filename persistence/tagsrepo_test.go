@@ -17,7 +17,7 @@ func TestGetAllTags(t *testing.T) {
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
-	r := Repository{dbx}
+	r := repository{dbx}
 
 	// success
 	rows := sqlmock.NewRows([]string{"id", "name"}).
@@ -65,7 +65,7 @@ func TestSearchForTags(t *testing.T) {
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
-	r := Repository{dbx}
+	r := repository{dbx}
 
 	// excact match
 	search := "Tag1"

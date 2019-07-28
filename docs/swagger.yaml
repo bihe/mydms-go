@@ -88,6 +88,7 @@ paths:
             type: array
         "401": {}
         "403": {}
+        "404": {}
       summary: retrieve all tags
       tags:
       - tags
@@ -105,6 +106,7 @@ paths:
             type: array
         "401": {}
         "403": {}
+        "404": {}
       summary: search for tags
       tags:
       - tags

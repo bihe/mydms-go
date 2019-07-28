@@ -6,7 +6,7 @@ import "github.com/bihe/mydms/persistence"
 // passed around, especially through HTTP handlers.
 type App struct {
 	// DB is used to interact with the persistence layer
-	DB *persistence.Repository
+	DB persistence.Repository
 	// V provides version information about the application
 	V VersionInfo
 }
