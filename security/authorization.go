@@ -34,7 +34,8 @@ func matchRole(a []string, b []string) bool {
 func split(claim string) *Claim {
 	parts := strings.Split(claim, "|")
 	if len(parts) == 3 {
-		return &Claim{Name: parts[0], URL: parts[1], Roles: []string{parts[2]}}
+		r := strings.Split(parts[2], ";")
+		return &Claim{Name: parts[0], URL: parts[1], Roles: r}
 	}
 	return &Claim{}
 }
