@@ -10,10 +10,14 @@ import (
 
 	"github.com/bihe/mydms/config"
 	"github.com/bihe/mydms/handler"
+	"github.com/bihe/mydms/persistence"
 	"github.com/bihe/mydms/security"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	_ "github.com/bihe/mydms/docs"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 var (
@@ -25,27 +29,20 @@ var (
 	BuildDate = "2019.07.27 13:45:00"
 )
 
+// @title mydms API
+// @version 2.0
+// @description This is the API of the mydms application
+
+// @license.name MIT License
+// @license.url https://raw.githubusercontent.com/bihe/mydms-go/master/LICENSE
+
+// @BasePath /api/v1
+
 func main() {
 	api, addr := setupAPIServer()
 
-	// Initialize the app context that's passed around.
-	app := &config.App{
-		V: config.VersionInfo{
-			Build:     Build,
-			Version:   Version,
-			BuildDate: BuildDate,
-		},
-	}
-
-	// Register app (*App) to be injected into all HTTP handlers.
-	api.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set(config.APP, app)
-			return next(c)
-		}
-	})
-
 	handler.RegisterRoutes(api)
+	api.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Start server
 	go func() {
@@ -116,6 +113,26 @@ func setupAPIServer() (*echo.Echo, string) {
 		CacheDuration: c.Sec.CacheDuration,
 	}))
 	e.Static(c.FS.URLPath, c.FS.Path)
+
+	db := persistence.New(c.DB.Dialect, c.DB.Connection)
+
+	// Initialize the app context that's passed around.
+	app := &config.App{
+		V: config.VersionInfo{
+			Build:     Build,
+			Version:   Version,
+			BuildDate: BuildDate,
+		},
+		DB: db,
+	}
+
+	// Register app (*App) to be injected into all HTTP handlers.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set(config.APP, app)
+			return next(c)
+		}
+	})
 
 	return e, fmt.Sprintf("%s:%d", args.HostName, args.Port)
 }

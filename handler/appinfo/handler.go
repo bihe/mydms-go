@@ -49,7 +49,15 @@ type VersionInfo struct {
 	BuildDate string `json:"buildDate"`
 }
 
-// GetAppInfo provides information about the application
+// GetAppInfo godoc
+// @Summary provides information about the application
+// @Description meta-data of the application including authenticated user and version
+// @Tags appinfo
+// @Produce  json
+// @Success 200 {object} appinfo.AppInfo
+// @Failure 401
+// @Failure 403
+// @Router /api/v1/appinfo [get]
 func GetAppInfo(c echo.Context) error {
 	sc := c.(*security.ServerContext)
 	app := c.Get(config.APP).(*config.App)
@@ -70,6 +78,5 @@ func GetAppInfo(c echo.Context) error {
 			BuildDate:   app.V.BuildDate,
 		},
 	}
-
 	return c.JSON(http.StatusOK, a)
 }

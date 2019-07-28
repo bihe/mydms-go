@@ -1,0 +1,111 @@
+basePath: /api/v1
+definitions:
+  appinfo.AppInfo:
+    properties:
+      userInfo:
+        $ref: '#/definitions/appinfo.UserInfo'
+        type: object
+      versionInfo:
+        $ref: '#/definitions/appinfo.VersionInfo'
+        type: object
+    type: object
+  appinfo.UserInfo:
+    properties:
+      displayName:
+        description: DisplayName of authenticated user
+        type: string
+      email:
+        description: Email of authenticated user
+        type: string
+      roles:
+        description: Roles the authenticated user possesses
+        items:
+          type: string
+        type: array
+      userId:
+        description: UserID of authenticated user
+        type: string
+      userName:
+        description: UserName of authenticated user
+        type: string
+    type: object
+  appinfo.VersionInfo:
+    properties:
+      buildDate:
+        description: BuildDate specifies the date of the build
+        type: string
+      buildNumber:
+        description: BuildNumber defines the specific build
+        type: string
+      version:
+        description: Version of the application
+        type: string
+    type: object
+  tags.Tag:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+host: '{{.Host}}'
+info:
+  contact: {}
+  description: This is the API of the mydms application
+  license:
+    name: MIT License
+    url: https://raw.githubusercontent.com/bihe/mydms-go/master/LICENSE
+  title: mydms API
+  version: "2.0"
+paths:
+  /api/v1/appinfo:
+    get:
+      description: meta-data of the application including authenticated user and version
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/appinfo.AppInfo'
+            type: object
+        "401": {}
+        "403": {}
+      summary: provides information about the application
+      tags:
+      - appinfo
+  /api/v1/tags:
+    get:
+      description: returns all available tags in alphabetical order
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tags.Tag'
+            type: array
+        "401": {}
+        "403": {}
+      summary: retrieve all tags
+      tags:
+      - tags
+  /api/v1/tags/search:
+    get:
+      description: returns all tags which match a given search-term
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tags.Tag'
+            type: array
+        "401": {}
+        "403": {}
+      summary: search for tags
+      tags:
+      - tags
+swagger: "2.0"
