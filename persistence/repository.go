@@ -4,12 +4,11 @@ import "github.com/jmoiron/sqlx"
 
 // Repository gives access to all persistence methods and interacts with the given store
 type Repository interface {
-	GetAllTags() ([]Tag, error)
-	SearchTags(s string) ([]Tag, error)
+	TagReader
 }
 
-// DBRepository wraps the underlying database implementation
-type repository struct {
+// dbstore wraps the underlying database implementation
+type dbstore struct {
 	db *sqlx.DB
 }
 
@@ -17,5 +16,5 @@ type repository struct {
 // by setting up the datbase
 func New(dbdialect, connstr string) Repository {
 	db := sqlx.MustConnect(dbdialect, connstr)
-	return repository{db: db}
+	return dbstore{db: db}
 }

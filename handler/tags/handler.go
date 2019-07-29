@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bihe/mydms/config"
 	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
 )
@@ -13,6 +12,11 @@ import (
 type Tag struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+}
+
+// Handler provides handler methods for tags
+type Handler struct {
+	Repo persistence.Repository
 }
 
 // GetAllTags godoc
@@ -25,16 +29,15 @@ type Tag struct {
 // @Failure 403
 // @Failure 404
 // @Router /api/v1/tags [get]
-func GetAllTags(c echo.Context) error {
+func (h *Handler) GetAllTags(c echo.Context) error {
 	var (
 		tags    []persistence.Tag
 		allTags []Tag
 		err     error
 	)
-	app := c.Get(config.APP).(*config.App)
 	log.Printf("return all available tags.")
 
-	if tags, err = app.DB.GetAllTags(); err != nil {
+	if tags, err = h.Repo.GetAllTags(); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 
@@ -54,19 +57,18 @@ func GetAllTags(c echo.Context) error {
 // @Failure 403
 // @Failure 404
 // @Router /api/v1/tags/search [get]
-func SearchForTags(c echo.Context) error {
+func (h *Handler) SearchForTags(c echo.Context) error {
 	var (
 		tags    []persistence.Tag
 		allTags []Tag
 		s       string
 		err     error
 	)
-	app := c.Get(config.APP).(*config.App)
 	s = c.QueryParam("name")
 
 	log.Printf("search for tags which match '%s'.", s)
 
-	if tags, err = app.DB.SearchTags(s); err != nil {
+	if tags, err = h.Repo.SearchTags(s); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 

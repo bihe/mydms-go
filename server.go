@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/bihe/mydms/config"
+	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/handler"
 	"github.com/bihe/mydms/persistence"
 	"github.com/bihe/mydms/security"
@@ -40,9 +40,6 @@ var (
 
 func main() {
 	api, addr := setupAPIServer()
-
-	handler.RegisterRoutes(api)
-	api.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Start server
 	go func() {
@@ -94,12 +91,13 @@ func setupAPIServer() (*echo.Echo, string) {
 	e := echo.New()
 	e.HideBanner = true
 	e.HTTPErrorHandler = customHTTPErrorHandler
+	e.Use(middleware.Recover())
+	e.Use(middleware.RequestID())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "[${time_rfc3339_nano}] (${id}) ${method} '${uri}' [${status}] Host: ${host}, IP: ${remote_ip}, error: '${error}', (latency: ${latency_human}) \n",
 	}))
-	e.Use(middleware.Recover())
-	e.Use(middleware.RequestID())
 	e.Use(middleware.Secure())
+	e.Use(middleware.Gzip())
 	e.Use(security.JwtWithConfig(security.JwtOptions{
 		JwtSecret:  c.Sec.JwtSecret,
 		JwtIssuer:  c.Sec.JwtIssuer,
@@ -114,25 +112,17 @@ func setupAPIServer() (*echo.Echo, string) {
 	}))
 	e.Static(c.FS.URLPath, c.FS.Path)
 
-	db := persistence.New(c.DB.Dialect, c.DB.Connection)
-
-	// Initialize the app context that's passed around.
-	app := &config.App{
-		V: config.VersionInfo{
-			Build:     Build,
-			Version:   Version,
-			BuildDate: BuildDate,
-		},
-		DB: db,
+	// persistence store && application version
+	repo := persistence.New(c.DB.Dialect, c.DB.Connection)
+	version := core.VersionInfo{
+		Build:     Build,
+		Version:   Version,
+		BuildDate: BuildDate,
 	}
+	handler.RegisterRoutes(e, repo, version)
 
-	// Register app (*App) to be injected into all HTTP handlers.
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set(config.APP, app)
-			return next(c)
-		}
-	})
+	// enable swagger for API endpoints
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	return e, fmt.Sprintf("%s:%d", args.HostName, args.Port)
 }

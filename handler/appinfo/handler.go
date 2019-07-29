@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bihe/mydms/config"
+	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/security"
 	"github.com/labstack/echo/v4"
 )
@@ -49,6 +49,11 @@ type VersionInfo struct {
 	BuildDate string `json:"buildDate"`
 }
 
+// Handler provides methos for applicatin metadata
+type Handler struct {
+	core.VersionInfo
+}
+
 // GetAppInfo godoc
 // @Summary provides information about the application
 // @Description meta-data of the application including authenticated user and version
@@ -58,9 +63,8 @@ type VersionInfo struct {
 // @Failure 401
 // @Failure 403
 // @Router /api/v1/appinfo [get]
-func GetAppInfo(c echo.Context) error {
+func (h *Handler) GetAppInfo(c echo.Context) error {
 	sc := c.(*security.ServerContext)
-	app := c.Get(config.APP).(*config.App)
 	id := sc.Identity
 	log.Printf("Got user: %s, email: %s", id.Username, id.Email)
 
@@ -73,9 +77,9 @@ func GetAppInfo(c echo.Context) error {
 			Roles:       id.Roles,
 		},
 		VersionInfo: VersionInfo{
-			Version:     app.V.Version,
-			BuildNumber: app.V.Build,
-			BuildDate:   app.V.BuildDate,
+			Version:     h.Version,
+			BuildNumber: h.Build,
+			BuildDate:   h.BuildDate,
 		},
 	}
 	return c.JSON(http.StatusOK, a)
