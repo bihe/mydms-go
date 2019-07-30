@@ -35,7 +35,7 @@ steps:
   displayName: 'Get dependencies'
 
 - script: |
-    go test -v -race -coverprofile=coverage.txt -covermode count 2>&1 ./... | go-junit-report > junit.xml
+    go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./... | go-junit-report > junit.xml
     gocov convert coverage.txt > coverage.json
     gocov-xml < coverage.json > coverage.xml
     gocov-html < coverage.json > index.html
