@@ -46,7 +46,7 @@ func TestConfigReader(t *testing.T) {
 		t.Error("Could not read.", err)
 	}
 
-	if config.Sec.JwtSecret != "secret" || config.Sec.Claim.Name != "bookmarks" || config.Sec.LoginRedirect != "https://login.url.com" || config.DB.Connection != "./bookmarks.db" || config.DB.Dialect != "sqlite" {
+	if config.Sec.JwtSecret != "secret" || config.Sec.Claim.Name != "bookmarks" || config.Sec.LoginRedirect != "https://login.url.com" || config.DB.ConnStr != "./bookmarks.db" || config.DB.Dialect != "sqlite" {
 		t.Error("Config values not read!")
 	}
 

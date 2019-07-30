@@ -36,8 +36,6 @@ var (
 // @license.name MIT License
 // @license.url https://raw.githubusercontent.com/bihe/mydms-go/master/LICENSE
 
-// @BasePath /api/v1
-
 func main() {
 	api, addr := setupAPIServer()
 
@@ -97,7 +95,7 @@ func setupAPIServer() (*echo.Echo, string) {
 		Format: "[${time_rfc3339_nano}] (${id}) ${method} '${uri}' [${status}] Host: ${host}, IP: ${remote_ip}, error: '${error}', (latency: ${latency_human}) \n",
 	}))
 	e.Use(middleware.Secure())
-	e.Use(middleware.Gzip())
+
 	e.Use(security.JwtWithConfig(security.JwtOptions{
 		JwtSecret:  c.Sec.JwtSecret,
 		JwtIssuer:  c.Sec.JwtIssuer,
@@ -113,13 +111,13 @@ func setupAPIServer() (*echo.Echo, string) {
 	e.Static(c.FS.URLPath, c.FS.Path)
 
 	// persistence store && application version
-	repo := persistence.New(c.DB.Dialect, c.DB.Connection)
+	conn := persistence.NewConnection(c.DB.Dialect, c.DB.ConnStr)
 	version := core.VersionInfo{
 		Build:     Build,
 		Version:   Version,
 		BuildDate: BuildDate,
 	}
-	handler.RegisterRoutes(e, repo, version)
+	handler.RegisterRoutes(e, conn, version)
 
 	// enable swagger for API endpoints
 	e.GET("/swagger/*", echoSwagger.WrapHandler)

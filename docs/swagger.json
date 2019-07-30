@@ -11,7 +11,7 @@
         "version": "2.0"
     },
     "host": "{{.Host}}",
-    "basePath": "/api/v1",
+    "basePath": "{{.BasePath}}",
     "paths": {
         "/api/v1/appinfo": {
             "get": {
@@ -33,6 +33,58 @@
                     },
                     "401": {},
                     "403": {}
+                }
+            }
+        },
+        "/api/v1/senders": {
+            "get": {
+                "description": "returns all available senders in alphabetical order",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "senders"
+                ],
+                "summary": "retrieve all senders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/senders.Sender"
+                            }
+                        }
+                    },
+                    "401": {},
+                    "403": {},
+                    "404": {}
+                }
+            }
+        },
+        "/api/v1/senders/search": {
+            "get": {
+                "description": "returns all senders which match a given search-term",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "senders"
+                ],
+                "summary": "search for senders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/senders.Sender"
+                            }
+                        }
+                    },
+                    "401": {},
+                    "403": {},
+                    "404": {}
                 }
             }
         },
@@ -144,6 +196,17 @@
                 },
                 "version": {
                     "description": "Version of the application",
+                    "type": "string"
+                }
+            }
+        },
+        "senders.Sender": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }

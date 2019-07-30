@@ -66,7 +66,7 @@ func TestGetAllTags(t *testing.T) {
 
 	m := &mockTagReader{}
 	m.init()
-	h := Handler{Repo: m}
+	h := Handler{Reader: m}
 	if assert.NoError(t, h.GetAllTags(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		var tags []Tag
@@ -80,7 +80,7 @@ func TestGetAllTags(t *testing.T) {
 	}
 
 	m.clear()
-	h = Handler{Repo: m}
+	h = Handler{Reader: m}
 	if assert.Error(t, h.GetAllTags(c)) {
 	}
 }
@@ -97,7 +97,7 @@ func TestSearchTags(t *testing.T) {
 
 	m := &mockTagReader{}
 	m.init()
-	h := Handler{Repo: m}
+	h := Handler{Reader: m}
 	if assert.NoError(t, h.SearchForTags(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		var tags []Tag

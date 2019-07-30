@@ -26,8 +26,8 @@ type Security struct {
 
 // Database defines the connection string
 type Database struct {
-	Connection string `json:"connectionString"`
-	Dialect    string `json:"dialect"`
+	ConnStr string `json:"connectionString"`
+	Dialect string `json:"dialect"`
 }
 
 // Claim defines the required claims

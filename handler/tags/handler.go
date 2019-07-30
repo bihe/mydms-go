@@ -16,7 +16,7 @@ type Tag struct {
 
 // Handler provides handler methods for tags
 type Handler struct {
-	Repo persistence.Repository
+	Reader persistence.TagReader
 }
 
 // GetAllTags godoc
@@ -37,7 +37,7 @@ func (h *Handler) GetAllTags(c echo.Context) error {
 	)
 	log.Printf("return all available tags.")
 
-	if tags, err = h.Repo.GetAllTags(); err != nil {
+	if tags, err = h.Reader.GetAllTags(); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 
@@ -68,7 +68,7 @@ func (h *Handler) SearchForTags(c echo.Context) error {
 
 	log.Printf("search for tags which match '%s'.", s)
 
-	if tags, err = h.Repo.SearchTags(s); err != nil {
+	if tags, err = h.Reader.SearchTags(s); err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 

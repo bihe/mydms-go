@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: '{{.BasePath}}'
 definitions:
   appinfo.AppInfo:
     properties:
@@ -41,6 +41,13 @@ definitions:
         description: Version of the application
         type: string
     type: object
+  senders.Sender:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   tags.Tag:
     properties:
       id:
@@ -74,6 +81,42 @@ paths:
       summary: provides information about the application
       tags:
       - appinfo
+  /api/v1/senders:
+    get:
+      description: returns all available senders in alphabetical order
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/senders.Sender'
+            type: array
+        "401": {}
+        "403": {}
+        "404": {}
+      summary: retrieve all senders
+      tags:
+      - senders
+  /api/v1/senders/search:
+    get:
+      description: returns all senders which match a given search-term
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/senders.Sender'
+            type: array
+        "401": {}
+        "403": {}
+        "404": {}
+      summary: search for senders
+      tags:
+      - senders
   /api/v1/tags:
     get:
       description: returns all available tags in alphabetical order
