@@ -9,6 +9,25 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+func TestNewSenderReader(t *testing.T) {
+	_, err := NewSenderReader(RepositoryConnection{})
+	if err == nil {
+		t.Errorf("no reader without connection possible")
+	}
+
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	_, err = NewSenderReader(RepositoryConnection{dbx})
+	if err != nil {
+		t.Errorf("could not get a reader: %v", err)
+	}
+}
+
 func TestGetAllSenders(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

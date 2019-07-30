@@ -9,6 +9,25 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+func TestNewTagReader(t *testing.T) {
+	_, err := NewTagReader(RepositoryConnection{})
+	if err == nil {
+		t.Errorf("no reader without connection possible")
+	}
+
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	
+	dbx := sqlx.NewDb(db, "mysql")
+	_, err = NewTagReader(RepositoryConnection{dbx})
+	if err != nil {
+		t.Errorf("could not get a reader: %v", err)
+	}
+}
+
 func TestGetAllTags(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
