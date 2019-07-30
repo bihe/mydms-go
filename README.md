@@ -7,7 +7,7 @@ Simple application to upload, store, search documents and meta-data.
 
 ## Structure
 
-The basic structure of 'mydms' is a REST backend by [echo](https://github.com/labstack/echo) using [golang](https://golang.org/), meta-data is kept in [mariadb](https://mariadb.org/), documents stored in [S3](https://aws.amazon.com/s3/) and the frontend provided via [angular](https://angular.io/). 
+The basic structure of 'mydms' is a REST backend by [echo](https://github.com/labstack/echo) using [golang](https://golang.org/), meta-data is kept in [mariadb](https://mariadb.org/), documents stored in [S3](https://aws.amazon.com/s3/) and the frontend provided via [angular](https://angular.io/).
 
 ## Technology
 
@@ -17,7 +17,7 @@ The basic structure of 'mydms' is a REST backend by [echo](https://github.com/la
 
 ## Build
 
-The REST Api and the UI can be built separately. 
+The REST Api and the UI can be built separately.
 
 ### UI
 
@@ -29,7 +29,7 @@ The REST Api and the UI can be built separately.
   
 ## Why
 
-I needed something to keep track of my scanned invoices. Being a software nerd, I created a solution for this purpose. The added benefit for me is, that I have a technology playground to try out new things. 
+I needed something to keep track of my scanned invoices. Being a software nerd, I created a solution for this purpose. The added benefit for me is, that I have a technology playground to try out new things.
 
 There are different versions/iterations available.
 
