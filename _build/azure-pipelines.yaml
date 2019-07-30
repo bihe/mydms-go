@@ -27,22 +27,12 @@ steps:
 - script: |
     go version
     go get -v -t -d ./...
-    go get github.com/jstemmer/go-junit-report
-    go get github.com/axw/gocov/gocov
-    go get github.com/AlekSi/gocov-xml
-    go get github.com/matm/gocov-html
   workingDirectory: '$(modulePath)'
   displayName: 'Get dependencies'
 
 - script: |
-    go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./... | go-junit-report > junit.xml
-    gocov convert coverage.txt > coverage.json
-    gocov-xml < coverage.json > coverage.xml
-    gocov-html < coverage.json > index.html
-    mkdir reports
-    cp junit.xml ./reports/junit.xml
-    cp coverage.xml ./reports/coverage.xml
-    cp index.html ./reports/index.html
+    go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./... 
+    bash <(curl -s https://codecov.io/bash)
   continueOnError: true
   workingDirectory: '$(modulePath)'
   displayName: 'Run unit tests'
@@ -52,19 +42,3 @@ steps:
   workingDirectory: '$(modulePath)'
   continueOnError: true
   displayName: 'Build App: mydms-go'
-
-- task: PublishTestResults@2
-  inputs:
-    testRunner: JUnit
-    testResultsFiles: '$(modulePath)/reports/junit.xml'
-
-- task: PublishCodeCoverageResults@1
-  inputs:
-    codeCoverageTool: 'cobertura'
-    summaryFileLocation: '$(modulePath)/reports/coverage.xml'
-    reportDirectory: '$(modulePath)/reports/'
-
-- task: PublishPipelineArtifact@0
-  inputs:
-    artifactName: 'Test Reports'
-    targetPath: '$(modulePath)/reports/'
