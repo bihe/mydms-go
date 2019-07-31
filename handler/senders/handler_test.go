@@ -81,8 +81,7 @@ func TestGetAllSenders(t *testing.T) {
 
 	m.clear()
 	h = Handler{Reader: m}
-	if assert.Error(t, h.GetAllSenders(c)) {
-	}
+	assert.Error(t, h.GetAllSenders(c))
 }
 
 func TestSearchSenders(t *testing.T) {
@@ -116,6 +115,5 @@ func TestSearchSenders(t *testing.T) {
 	req.URL.RawQuery = q.Encode()
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
-	if assert.Error(t, h.SearchForSenders(c)) {
-	}
+	assert.Error(t, h.SearchForSenders(c))
 }

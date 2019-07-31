@@ -81,8 +81,7 @@ func TestGetAllTags(t *testing.T) {
 
 	m.clear()
 	h = Handler{Reader: m}
-	if assert.Error(t, h.GetAllTags(c)) {
-	}
+	assert.Error(t, h.GetAllTags(c))
 }
 
 func TestSearchTags(t *testing.T) {
@@ -116,6 +115,5 @@ func TestSearchTags(t *testing.T) {
 	req.URL.RawQuery = q.Encode()
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
-	if assert.Error(t, h.SearchForTags(c)) {
-	}
+	assert.Error(t, h.SearchForTags(c))
 }
