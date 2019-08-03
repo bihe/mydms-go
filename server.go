@@ -123,7 +123,6 @@ func setupAPIServer() (*echo.Echo, string) {
 		Version:   Version,
 		BuildDate: BuildDate,
 	}
-
 	registerRoutes(e, con, c, version)
 
 	// enable swagger for API endpoints

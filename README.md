@@ -12,7 +12,7 @@ The basic structure of 'mydms' is a REST backend by [echo](https://github.com/la
 
 ## Technology
 
-* REST backend: labstack/echo (v4.1.5), golang (1.12)
+* REST backend: labstack/echo (v4.x), golang (1.1x)
 * frontend angular (8.x.x)
 * mariadb: 10.x
 

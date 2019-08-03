@@ -56,10 +56,10 @@ func (m mockReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
 	return nil
 }
 
-func setup(t *testing.T, config Config, file string) (echo.Context, *Handler, *httptest.ResponseRecorder) {
+func setup(t *testing.T, config Config, formfield, file string) (echo.Context, *Handler, *httptest.ResponseRecorder) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", file)
+	part, err := writer.CreateFormFile(formfield, file)
 	if err != nil {
 		t.Fatalf(multipartErr, err)
 	}
@@ -95,7 +95,7 @@ func TestUpload(t *testing.T) {
 	c, h, rec := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    10000,
-	}, fileName)
+	}, "file", fileName)
 
 	if assert.NoError(t, h.UploadFile(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -110,10 +110,12 @@ func TestUpload(t *testing.T) {
 func TestUploadFail(t *testing.T) {
 	// Setup
 	var err error
+
+	// file size
 	c, h, _ := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1,
-	}, fileName)
+	}, "file", fileName)
 	err = h.UploadFile(c)
 	if err == nil {
 		t.Errorf("expected error file type!")
@@ -124,7 +126,7 @@ func TestUploadFail(t *testing.T) {
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1,
 		UploadPath:       "/NOTAVAIL/",
-	}, fileName)
+	}, "file", fileName)
 	err = h.UploadFile(c)
 	if err == nil {
 		t.Errorf("expected error file type!")
@@ -137,7 +139,7 @@ func TestMissingUploadFile(t *testing.T) {
 	c, h, _ := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1000,
-	}, "FILE__")
+	}, "FILE__", fileName)
 
 	err = h.UploadFile(c)
 	if err == nil {
@@ -151,7 +153,7 @@ func TestUploadPeristenceFail(t *testing.T) {
 	c, h, _ := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1000,
-	}, "error.pdf")
+	}, "file", "error.pdf")
 
 	err = h.UploadFile(c)
 	if err == nil {
