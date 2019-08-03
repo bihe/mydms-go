@@ -96,10 +96,12 @@ func (e RedirectError) Error() string {
 // Shortcuts for commen error responses
 // --------------------------------------------------------------------------
 
+const t = "about:blank"
+
 // ErrBadRequest returns a http.StatusBadRequest
 func ErrBadRequest(err BadRequestError) *ProblemDetail {
 	return &ProblemDetail{
-		Type:   "about:blank",
+		Type:   t,
 		Title:  "the request cannot be fulfilled",
 		Status: http.StatusBadRequest,
 		Detail: err.Error(),
@@ -109,7 +111,7 @@ func ErrBadRequest(err BadRequestError) *ProblemDetail {
 // ErrNotFound returns a http.StatusNotFound
 func ErrNotFound(err NotFoundError) *ProblemDetail {
 	return &ProblemDetail{
-		Type:   "about:blank",
+		Type:   t,
 		Title:  "object cannot be found",
 		Status: http.StatusNotFound,
 		Detail: err.Error(),
@@ -119,7 +121,7 @@ func ErrNotFound(err NotFoundError) *ProblemDetail {
 // ErrServerError returns a http.StatusInternalServerError
 func ErrServerError(err ServerError) *ProblemDetail {
 	return &ProblemDetail{
-		Type:   "about:blank",
+		Type:   t,
 		Title:  "cannot service the request",
 		Status: http.StatusInternalServerError,
 		Detail: err.Error(),
@@ -129,7 +131,7 @@ func ErrServerError(err ServerError) *ProblemDetail {
 // ErrRedirectError returns a http.StatusTemporaryRedirect
 func ErrRedirectError(err RedirectError) *ProblemDetail {
 	return &ProblemDetail{
-		Type:     "about:blank",
+		Type:     t,
 		Title:    "a redirect is necessary",
 		Status:   err.Status,
 		Detail:   err.Error(),

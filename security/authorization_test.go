@@ -4,6 +4,9 @@ import (
 	"testing"
 )
 
+const failed = "Authorization failed."
+const shouldFail = "Authorization should fail."
+
 func TestAuthorization(t *testing.T) {
 	reqClaim := Claim{Name: "test", URL: "http://a.b.c.de/f", Roles: []string{"user", "admin"}}
 	var claims []string
@@ -12,12 +15,12 @@ func TestAuthorization(t *testing.T) {
 	claims = append(claims, "test|http://a.b.c.de/f|user")
 
 	if _, err := Authorize(reqClaim, claims); err != nil {
-		t.Error("Authorization failed.", err)
+		t.Error(failed, err)
 	}
 
 	claims = claims[0:1]
 	if _, err := Authorize(reqClaim, claims); err == nil {
-		t.Error("Authorization should fail.", err)
+		t.Error(shouldFail, err)
 	}
 
 	claims = nil
@@ -25,16 +28,16 @@ func TestAuthorization(t *testing.T) {
 	claims = append(claims, "test|http://a.b.c.de/f|admin")
 
 	if _, err := Authorize(reqClaim, claims); err != nil {
-		t.Error("Authorization failed.", err)
+		t.Error(failed, err)
 	}
 
 	claims = []string{"test|http://a.b.c.de/nomatch|role"}
 	if _, err := Authorize(reqClaim, claims); err == nil {
-		t.Error("Authorization should fail.", err)
+		t.Error(shouldFail, err)
 	}
 
 	claims = []string{"test|NOURLä|role"}
 	if _, err := Authorize(reqClaim, claims); err == nil {
-		t.Error("Authorization should fail.", err)
+		t.Error(shouldFail, err)
 	}
 }

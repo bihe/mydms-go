@@ -9,9 +9,11 @@ import (
 // see https://github.com/goenning/go-cache-demo/blob/master/LICENSE
 // initially created by: https://github.com/goenning
 
+const key = "MY_KEY"
+
 func TestMemCacheGetEmpty(t *testing.T) {
 	cache := newMemCache(parse("5s"))
-	user := cache.get("MY_KEY")
+	user := cache.get(key)
 	if user != nil {
 		t.Fatalf("exptected empty/nil user!")
 	}
@@ -26,8 +28,8 @@ func TestMemCacheGetValue(t *testing.T) {
 		Username:    "u",
 		Roles:       []string{"role"},
 	}
-	cache.set("MY_KEY", &u)
-	user := cache.get("MY_KEY")
+	cache.set(key, &u)
+	user := cache.get(key)
 	if user == nil {
 		t.Fatalf("exptected cached used got nil!")
 	}
@@ -45,11 +47,11 @@ func TestMemCacheGetExpiredValue(t *testing.T) {
 		Username:    "u",
 		Roles:       []string{"role"},
 	}
-	cache.set("MY_KEY", &u)
+	cache.set(key, &u)
 
 	time.Sleep(parse("1s200ms"))
 
-	user := cache.get("MY_KEY")
+	user := cache.get(key)
 	if user != nil {
 		t.Fatalf("exptected expiry of user object!")
 	}

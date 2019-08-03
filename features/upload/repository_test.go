@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const fatalErr = "an error '%s' was not expected when opening a stub database connection"
+const expectations = "there were unfulfilled expectations: %s"
+const deleteExpErr = "error was not expected while delete item: %v"
+
 func TestNewReaderWriter(t *testing.T) {
 	_, err := NewReaderWriter(persistence.Connection{})
 	if err == nil {
@@ -18,7 +22,7 @@ func TestNewReaderWriter(t *testing.T) {
 
 	db, _, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -32,7 +36,7 @@ func TestNewReaderWriter(t *testing.T) {
 func TestWrite(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -62,19 +66,19 @@ func TestWrite(t *testing.T) {
 
 	a, err := c.CreateAtomic()
 	if err = rw.Write(item, a); err != nil {
-		t.Errorf("error was not expected while delete item: %v", err)
+		t.Errorf(deleteExpErr, err)
 	}
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }
 
 func TestWriteError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -99,14 +103,14 @@ func TestWriteError(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }
 
 func TestRead(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -147,14 +151,14 @@ func TestRead(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }
 
 func TestDelete(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -175,7 +179,7 @@ func TestDelete(t *testing.T) {
 
 	// now we execute our method
 	if err = rw.Delete(item.ID, persistence.Atomic{}); err != nil {
-		t.Errorf("error was not expected while delete item: %v", err)
+		t.Errorf(deleteExpErr, err)
 	}
 
 	// externally supplied tx
@@ -189,14 +193,14 @@ func TestDelete(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }
 
 func TestDeleteError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -221,6 +225,6 @@ func TestDeleteError(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }

@@ -11,6 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const authHeader = "Authorization"
+const bearer = "Bearer "
+
 func TestJwtMiddleware(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -52,28 +55,28 @@ func TestJwtMiddleware(t *testing.T) {
 
 	// invalid token / no cookie
 	cookie.Expires = time.Unix(0, 0)
-	req.Header.Set("Authorization", "Bearer token")
+	req.Header.Set(authHeader, "Bearer token")
 	re = h(c).(core.RedirectError)
 	assert.Equal(re.URL, config.RedirectURL)
 
 	// valid token, missing claim
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NzAyNmYxMWM2ODQ0YzVlOWEyYmM1YWNkNGQxYjljNyIsImlhdCI6MTU0MDcyODAxMiwiaXNzIjoidGVzdCIsImV4cCI6MTc0MTMzMjgxMiwic3ViIjoiaGVucmlrQGEuYi5jLmRlIiwiVHlwZSI6ImxvZ2luLlVzZXIiLCJVc2VyTmFtZSI6InVzZXIubmFtZSIsIkVtYWlsIjoiaGVucmlrQGEuYi5jLmRlIiwiQ2xhaW1zIjpbImNsYWltfGh0dHA6Ly9sb2NhbGhvc3R8QUEiXSwiVXNlcklkIjoiMTExIiwiRGlzcGxheU5hbWUiOiJVc2VyMSBOYW1lIiwiU3VybmFtZSI6Ik5hbWUiLCJHaXZlbk5hbWUiOiJVc2VyMSJ9.oMcQdAipJFJL9Q2ACh1Rav_I9FyDWBbc2vnI4rAkhKY"
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set(authHeader, bearer+token)
 	re = h(c).(core.RedirectError)
 	assert.Equal(re.URL, config.RedirectURL)
 
 	// valid token
 	token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NzAyNmYxMWM2ODQ0YzVlOWEyYmM1YWNkNGQxYjljNyIsImlhdCI6MTU0MDcyODAxMiwiaXNzIjoidGVzdCIsImV4cCI6MTc0MTMzMjgxMiwic3ViIjoiaGVucmlrQGEuYi5jLmRlIiwiVHlwZSI6ImxvZ2luLlVzZXIiLCJVc2VyTmFtZSI6InVzZXIubmFtZSIsIkVtYWlsIjoiaGVucmlrQGEuYi5jLmRlIiwiQ2xhaW1zIjpbImNsYWltfGh0dHA6Ly9sb2NhbGhvc3R8cm9sZUEiXSwiVXNlcklkIjoiMTExIiwiRGlzcGxheU5hbWUiOiJVc2VyMSBOYW1lIiwiU3VybmFtZSI6Ik5hbWUiLCJHaXZlbk5hbWUiOiJVc2VyMSJ9._gNI2zMSop__flAeUguOJbbwiP8IDzFMi0VltVvm13o"
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set(authHeader, bearer+token)
 	assert.NoError(h(c))
 
 	// call again to check cache
 	token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NzAyNmYxMWM2ODQ0YzVlOWEyYmM1YWNkNGQxYjljNyIsImlhdCI6MTU0MDcyODAxMiwiaXNzIjoidGVzdCIsImV4cCI6MTc0MTMzMjgxMiwic3ViIjoiaGVucmlrQGEuYi5jLmRlIiwiVHlwZSI6ImxvZ2luLlVzZXIiLCJVc2VyTmFtZSI6InVzZXIubmFtZSIsIkVtYWlsIjoiaGVucmlrQGEuYi5jLmRlIiwiQ2xhaW1zIjpbImNsYWltfGh0dHA6Ly9sb2NhbGhvc3R8cm9sZUEiXSwiVXNlcklkIjoiMTExIiwiRGlzcGxheU5hbWUiOiJVc2VyMSBOYW1lIiwiU3VybmFtZSI6Ik5hbWUiLCJHaXZlbk5hbWUiOiJVc2VyMSJ9._gNI2zMSop__flAeUguOJbbwiP8IDzFMi0VltVvm13o"
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set(authHeader, bearer+token)
 	assert.NoError(h(c))
 
 	// valid token via cookie
-	req.Header.Del("Authorization")
+	req.Header.Del(authHeader)
 	cookie = &http.Cookie{
 		Name:   "test",
 		Domain: "localhost",

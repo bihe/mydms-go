@@ -32,13 +32,17 @@ startxref
 %EOF
 `
 
+const fileName = "test.pdf"
+const multipartErr = "could not create multipart: %v"
+const contentType = "Content-Type"
+
 // Write(item Upload, a persistence.Atomic) (err error)
 // Read(id string) (Upload, error)
 // Delete(id string, a persistence.Atomic) (err error)
 type mockReaderWriter struct{}
 
 func (m mockReaderWriter) Write(item Upload, a persistence.Atomic) (err error) {
-	if item.FileName == "test.pdf" {
+	if item.FileName == fileName {
 		return nil
 	}
 	return fmt.Errorf("error")
@@ -58,9 +62,9 @@ func TestUpload(t *testing.T) {
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "test.pdf")
+	part, err := writer.CreateFormFile("file", fileName)
 	if err != nil {
-		t.Errorf("could not create multipart: %v", err)
+		t.Errorf(multipartErr, err)
 		return
 	}
 	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
@@ -69,7 +73,7 @@ func TestUpload(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	ctype := writer.FormDataContentType()
-	req.Header.Add("Content-Type", ctype)
+	req.Header.Add(contentType, ctype)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	rw := mockReaderWriter{}
@@ -103,9 +107,9 @@ func TestUploadFail(t *testing.T) {
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "test.pdf")
+	part, err := writer.CreateFormFile("file", fileName)
 	if err != nil {
-		t.Errorf("could not create multipart: %v", err)
+		t.Errorf(multipartErr, err)
 		return
 	}
 	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
@@ -114,7 +118,7 @@ func TestUploadFail(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	ctype := writer.FormDataContentType()
-	req.Header.Add("Content-Type", ctype)
+	req.Header.Add(contentType, ctype)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	rw := mockReaderWriter{}
@@ -166,9 +170,9 @@ func TestMissingUploadFile(t *testing.T) {
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("FILE__", "test.pdf")
+	part, err := writer.CreateFormFile("FILE__", fileName)
 	if err != nil {
-		t.Errorf("could not create multipart: %v", err)
+		t.Errorf(multipartErr, err)
 		return
 	}
 	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
@@ -177,7 +181,7 @@ func TestMissingUploadFile(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	ctype := writer.FormDataContentType()
-	req.Header.Add("Content-Type", ctype)
+	req.Header.Add(contentType, ctype)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	rw := mockReaderWriter{}
@@ -209,7 +213,7 @@ func TestUploadPeristenceFail(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("file", "error.pdf")
 	if err != nil {
-		t.Errorf("could not create multipart: %v", err)
+		t.Errorf(multipartErr, err)
 		return
 	}
 	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
@@ -218,7 +222,7 @@ func TestUploadPeristenceFail(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	ctype := writer.FormDataContentType()
-	req.Header.Add("Content-Type", ctype)
+	req.Header.Add(contentType, ctype)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	rw := mockReaderWriter{}
