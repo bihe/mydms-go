@@ -56,16 +56,12 @@ func (m mockReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
 	return nil
 }
 
-func TestUpload(t *testing.T) {
-	// Setup
-	var err error
-
+func setup(t *testing.T, config Config, file string) (echo.Context, *Handler, *httptest.ResponseRecorder) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", fileName)
+	part, err := writer.CreateFormFile("file", file)
 	if err != nil {
-		t.Errorf(multipartErr, err)
-		return
+		t.Fatalf(multipartErr, err)
 	}
 	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
 	writer.Close()
@@ -78,18 +74,28 @@ func TestUpload(t *testing.T) {
 	c := e.NewContext(req, rec)
 	rw := mockReaderWriter{}
 
-	tmp := ""
-	if os.PathSeparator == '\\' {
-		tmp = os.Getenv("TEMP")
-	} else {
-		tmp = "/tmp"
+	tmp := config.UploadPath
+	if config.UploadPath == "" {
+		if os.PathSeparator == '\\' {
+			tmp = os.Getenv("TEMP")
+		} else {
+			tmp = "/tmp"
+		}
 	}
+	config.UploadPath = tmp
+	return c, NewHandler(rw, Config{
+		AllowedFileTypes: config.AllowedFileTypes,
+		MaxUploadSize:    config.MaxUploadSize,
+		UploadPath:       tmp,
+	}), rec
+}
 
-	h := NewHandler(rw, Config{
+func TestUpload(t *testing.T) {
+	// Setup
+	c, h, rec := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    10000,
-		UploadPath:       tmp,
-	})
+	}, fileName)
 
 	if assert.NoError(t, h.UploadFile(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -104,60 +110,21 @@ func TestUpload(t *testing.T) {
 func TestUploadFail(t *testing.T) {
 	// Setup
 	var err error
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", fileName)
-	if err != nil {
-		t.Errorf(multipartErr, err)
-		return
-	}
-	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
-	writer.Close()
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/", body)
-	ctype := writer.FormDataContentType()
-	req.Header.Add(contentType, ctype)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	rw := mockReaderWriter{}
-
-	tmp := ""
-	if os.PathSeparator == '\\' {
-		tmp = os.Getenv("TEMP")
-	} else {
-		tmp = "/tmp"
-	}
-
-	// upload size
-	h := NewHandler(rw, Config{
+	c, h, _ := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1,
-		UploadPath:       tmp,
-	})
-	err = h.UploadFile(c)
-	if err == nil {
-		t.Errorf("expected error upload size!")
-	}
-
-	// upload size
-	h = NewHandler(rw, Config{
-		AllowedFileTypes: []string{"png"},
-		MaxUploadSize:    1000,
-		UploadPath:       tmp,
-	})
+	}, fileName)
 	err = h.UploadFile(c)
 	if err == nil {
 		t.Errorf("expected error file type!")
 	}
 
 	// upload destination
-	h = NewHandler(rw, Config{
-		AllowedFileTypes: []string{"pdf"},
-		MaxUploadSize:    1000,
+	c, h, _ = setup(t, Config{
+		AllowedFileTypes: []string{"png", "pdf"},
+		MaxUploadSize:    1,
 		UploadPath:       "/NOTAVAIL/",
-	})
+	}, fileName)
 	err = h.UploadFile(c)
 	if err == nil {
 		t.Errorf("expected error file type!")
@@ -167,38 +134,11 @@ func TestUploadFail(t *testing.T) {
 func TestMissingUploadFile(t *testing.T) {
 	// Setup
 	var err error
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("FILE__", fileName)
-	if err != nil {
-		t.Errorf(multipartErr, err)
-		return
-	}
-	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
-	writer.Close()
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/", body)
-	ctype := writer.FormDataContentType()
-	req.Header.Add(contentType, ctype)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	rw := mockReaderWriter{}
-
-	tmp := ""
-	if os.PathSeparator == '\\' {
-		tmp = os.Getenv("TEMP")
-	} else {
-		tmp = "/tmp"
-	}
-
-	// missing file
-	h := NewHandler(rw, Config{
+	c, h, _ := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1000,
-		UploadPath:       tmp,
-	})
+	}, "FILE__")
+
 	err = h.UploadFile(c)
 	if err == nil {
 		t.Errorf("expected error missing file!")
@@ -208,38 +148,11 @@ func TestMissingUploadFile(t *testing.T) {
 func TestUploadPeristenceFail(t *testing.T) {
 	// Setup
 	var err error
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "error.pdf")
-	if err != nil {
-		t.Errorf(multipartErr, err)
-		return
-	}
-	io.Copy(part, bytes.NewBuffer([]byte(pdfPayload)))
-	writer.Close()
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/", body)
-	ctype := writer.FormDataContentType()
-	req.Header.Add(contentType, ctype)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	rw := mockReaderWriter{}
-
-	tmp := ""
-	if os.PathSeparator == '\\' {
-		tmp = os.Getenv("TEMP")
-	} else {
-		tmp = "/tmp"
-	}
-
-	// missing file
-	h := NewHandler(rw, Config{
+	c, h, _ := setup(t, Config{
 		AllowedFileTypes: []string{"png", "pdf"},
 		MaxUploadSize:    1000,
-		UploadPath:       tmp,
-	})
+	}, "error.pdf")
+
 	err = h.UploadFile(c)
 	if err == nil {
 		t.Errorf("expected error persistence!")
