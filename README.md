@@ -3,6 +3,7 @@
 Simple application to upload, store, search documents and meta-data.
 
 [![codecov](https://codecov.io/gh/bihe/mydms-go/branch/master/graph/badge.svg)](https://codecov.io/gh/bihe/mydms-go)
+[![Sonarcloud Status](https://sonarcloud.io/api/project_badges/measure?project=bihe_mydms-go&metric=alert_status)](https://sonarcloud.io/dashboard?id=bihe_mydms-go)
 [![Build Status](https://dev.azure.com/henrikbinggl/mydms-go/_apis/build/status/bihe.mydms-go?branchName=master)](https://dev.azure.com/henrikbinggl/mydms-go/_build/latest?definitionId=6&branchName=master)
 
 ## Structure
