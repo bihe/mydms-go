@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"strings"
@@ -19,18 +19,22 @@ const configString = `{
 	"cacheDuration": "10m"
     },
     "database": {
-	"connectionString": "./bookmarks.db",
-	"dialect": "sqlite"
+		"connectionString": "./bookmarks.db"
+	},
+	"upload": {
+        "allowedFileTypes": ["pdf","png"],
+        "maxUploadSize": 1000,
+        "UploadPath": "/PATH"
     },
     "logging": {
-	"logPrefix": "prefix",
-	"rollingFileLogger": {
-		"filePath": "/temp/file",
-		"maxFileSize": 100,
-		"numberOfMaxBackups": 4,
-		"maxAge": 7,
-		"compressFile": false
-	}
+		"logPrefix": "prefix",
+		"rollingFileLogger": {
+			"filePath": "/temp/file",
+			"maxFileSize": 100,
+			"numberOfMaxBackups": 4,
+			"maxAge": 7,
+			"compressFile": false
+		}
     },
     "fileServer": {
 	    "path": "/tmp",
@@ -46,12 +50,21 @@ func TestConfigReader(t *testing.T) {
 		t.Error("Could not read.", err)
 	}
 
-	if config.Sec.JwtSecret != "secret" || config.Sec.Claim.Name != "bookmarks" || config.Sec.LoginRedirect != "https://login.url.com" || config.DB.ConnStr != "./bookmarks.db" || config.DB.Dialect != "sqlite" {
+	if config.Sec.JwtSecret != "secret" || config.Sec.Claim.Name != "bookmarks" || config.Sec.LoginRedirect != "https://login.url.com" || config.DB.ConnStr != "./bookmarks.db" {
 		t.Error("Config values not read!")
 	}
-
 	if config.Sec.CacheDuration != "10m" {
 		t.Error("Config value Sec.CacheDuration not read!")
+	}
+
+	if config.UP.MaxUploadSize != 1000 {
+		t.Error("Config value UP.MaxUploadSiz not read!")
+	}
+	if config.UP.UploadPath != "/PATH" {
+		t.Error("Config value UP.UploadPath not read!")
+	}
+	if len(config.UP.AllowedFileTypes) != 2 {
+		t.Error("Config value UP.AllowedFileTypes not read!")
 	}
 
 	if config.Log.Prefix != "prefix" {

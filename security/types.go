@@ -45,17 +45,3 @@ type ServerContext struct {
 	echo.Context
 	Identity User
 }
-
-// RedirectError is a specific error indicating a necessary redirect
-type RedirectError struct {
-	// Code is a HTTP status code
-	Code int
-	// Err is the error message
-	Err string
-	// URL ist the redirect URL
-	URL string
-}
-
-func (e RedirectError) Error() string {
-	return e.Err
-}

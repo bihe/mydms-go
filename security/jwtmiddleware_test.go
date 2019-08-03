@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,8 +37,7 @@ func TestJwtMiddleware(t *testing.T) {
 	assert := assert.New(t)
 
 	// no token / no cookie
-	re := h(c).(RedirectError)
-	assert.Equal(http.StatusUnauthorized, re.Code)
+	re := h(c).(core.RedirectError)
 	assert.Equal(re.URL, config.RedirectURL)
 
 	// no token / invalid cookie
@@ -47,22 +47,19 @@ func TestJwtMiddleware(t *testing.T) {
 		Path:   "/",
 	}
 	req.AddCookie(cookie)
-	re = h(c).(RedirectError)
-	assert.Equal(http.StatusUnauthorized, re.Code)
+	re = h(c).(core.RedirectError)
 	assert.Equal(re.URL, config.RedirectURL)
 
 	// invalid token / no cookie
 	cookie.Expires = time.Unix(0, 0)
 	req.Header.Set("Authorization", "Bearer token")
-	re = h(c).(RedirectError)
-	assert.Equal(http.StatusUnauthorized, re.Code)
+	re = h(c).(core.RedirectError)
 	assert.Equal(re.URL, config.RedirectURL)
 
 	// valid token, missing claim
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NzAyNmYxMWM2ODQ0YzVlOWEyYmM1YWNkNGQxYjljNyIsImlhdCI6MTU0MDcyODAxMiwiaXNzIjoidGVzdCIsImV4cCI6MTc0MTMzMjgxMiwic3ViIjoiaGVucmlrQGEuYi5jLmRlIiwiVHlwZSI6ImxvZ2luLlVzZXIiLCJVc2VyTmFtZSI6InVzZXIubmFtZSIsIkVtYWlsIjoiaGVucmlrQGEuYi5jLmRlIiwiQ2xhaW1zIjpbImNsYWltfGh0dHA6Ly9sb2NhbGhvc3R8QUEiXSwiVXNlcklkIjoiMTExIiwiRGlzcGxheU5hbWUiOiJVc2VyMSBOYW1lIiwiU3VybmFtZSI6Ik5hbWUiLCJHaXZlbk5hbWUiOiJVc2VyMSJ9.oMcQdAipJFJL9Q2ACh1Rav_I9FyDWBbc2vnI4rAkhKY"
 	req.Header.Set("Authorization", "Bearer "+token)
-	re = h(c).(RedirectError)
-	assert.Equal(http.StatusForbidden, re.Code)
+	re = h(c).(core.RedirectError)
 	assert.Equal(re.URL, config.RedirectURL)
 
 	// valid token

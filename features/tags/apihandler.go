@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,7 +16,7 @@ type Tag struct {
 
 // Handler provides handler methods for tags
 type Handler struct {
-	Reader persistence.TagReader
+	Reader Reader
 }
 
 // GetAllTags godoc
@@ -25,20 +25,20 @@ type Handler struct {
 // @Tags tags
 // @Produce  json
 // @Success 200 {array} tags.Tag
-// @Failure 401
-// @Failure 403
-// @Failure 404
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 404 {object} core.ProblemDetail
 // @Router /api/v1/tags [get]
 func (h *Handler) GetAllTags(c echo.Context) error {
 	var (
-		tags    []persistence.Tag
+		tags    []TagEntity
 		allTags []Tag
 		err     error
 	)
 	log.Printf("return all available tags.")
 
 	if tags, err = h.Reader.GetAllTags(); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err)
+		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	for _, t := range tags {
@@ -53,13 +53,13 @@ func (h *Handler) GetAllTags(c echo.Context) error {
 // @Tags tags
 // @Produce  json
 // @Success 200 {array} tags.Tag
-// @Failure 401
-// @Failure 403
-// @Failure 404
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 404 {object} core.ProblemDetail
 // @Router /api/v1/tags/search [get]
 func (h *Handler) SearchForTags(c echo.Context) error {
 	var (
-		tags    []persistence.Tag
+		tags    []TagEntity
 		allTags []Tag
 		s       string
 		err     error
@@ -69,7 +69,7 @@ func (h *Handler) SearchForTags(c echo.Context) error {
 	log.Printf("search for tags which match '%s'.", s)
 
 	if tags, err = h.Reader.SearchTags(s); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err)
+		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	for _, t := range tags {

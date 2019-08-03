@@ -60,8 +60,8 @@ type Handler struct {
 // @Tags appinfo
 // @Produce  json
 // @Success 200 {object} appinfo.AppInfo
-// @Failure 401
-// @Failure 403
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
 // @Router /api/v1/appinfo [get]
 func (h *Handler) GetAppInfo(c echo.Context) error {
 	sc := c.(*security.ServerContext)

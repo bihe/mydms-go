@@ -41,6 +41,29 @@ definitions:
         description: Version of the application
         type: string
     type: object
+  core.ProblemDetail:
+    properties:
+      detail:
+        description: Detail is a human-readable explanation specific to this occurrence
+          of the problem
+        type: string
+      instance:
+        description: Instance is a URI reference that identifies the specific occurrence
+          of the problem
+        type: string
+      status:
+        description: Status is the HTTP status code
+        type: integer
+      title:
+        description: Title is a short, human-readable summary of the problem type
+        type: string
+      type:
+        description: |-
+          Type is a URI reference [RFC3986] that identifies the
+          problem type.  This specification encourages that, when
+          dereferenced, it provide human-readable documentation for the problem
+        type: string
+    type: object
   senders.Sender:
     properties:
       id:
@@ -53,6 +76,13 @@ definitions:
       id:
         type: integer
       name:
+        type: string
+    type: object
+  upload.Result:
+    properties:
+      message:
+        type: string
+      token:
         type: string
     type: object
 host: '{{.Host}}'
@@ -76,8 +106,16 @@ paths:
           schema:
             $ref: '#/definitions/appinfo.AppInfo'
             type: object
-        "401": {}
-        "403": {}
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
       summary: provides information about the application
       tags:
       - appinfo
@@ -93,9 +131,21 @@ paths:
             items:
               $ref: '#/definitions/senders.Sender'
             type: array
-        "401": {}
-        "403": {}
-        "404": {}
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
       summary: retrieve all senders
       tags:
       - senders
@@ -111,9 +161,21 @@ paths:
             items:
               $ref: '#/definitions/senders.Sender'
             type: array
-        "401": {}
-        "403": {}
-        "404": {}
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
       summary: search for senders
       tags:
       - senders
@@ -129,9 +191,21 @@ paths:
             items:
               $ref: '#/definitions/tags.Tag'
             type: array
-        "401": {}
-        "403": {}
-        "404": {}
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
       summary: retrieve all tags
       tags:
       - tags
@@ -147,10 +221,57 @@ paths:
             items:
               $ref: '#/definitions/tags.Tag'
             type: array
-        "401": {}
-        "403": {}
-        "404": {}
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
       summary: search for tags
       tags:
       - tags
+  /api/v1/uploads/file:
+    post:
+      description: temporarily stores a file and creates a item in the repository
+      parameters:
+      - description: file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/upload.Result'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+      summary: upload a document
+      tags:
+      - upload
 swagger: "2.0"

@@ -1,4 +1,4 @@
-package persistence
+package senders
 
 import (
 	"fmt"
@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/bihe/mydms/persistence"
 	"github.com/jmoiron/sqlx"
 )
 
 func TestNewSenderReader(t *testing.T) {
-	_, err := NewSenderReader(RepositoryConnection{})
+	_, err := NewReader(persistence.Connection{})
 	if err == nil {
 		t.Errorf("no reader without connection possible")
 	}
@@ -22,13 +23,13 @@ func TestNewSenderReader(t *testing.T) {
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
-	_, err = NewSenderReader(RepositoryConnection{dbx})
+	_, err = NewReader(persistence.NewFromDB(dbx))
 	if err != nil {
 		t.Errorf("could not get a reader: %v", err)
 	}
 }
 
-func TestGetAllSenders(t *testing.T) {
+func TestGetAllEntitySenders(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -36,7 +37,8 @@ func TestGetAllSenders(t *testing.T) {
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
-	r := dbSenderReader{dbx}
+	c := persistence.NewFromDB(dbx)
+	r := dbSenderReader{c}
 
 	// success
 	rows := sqlmock.NewRows([]string{"id", "name"}).
@@ -76,7 +78,7 @@ func TestGetAllSenders(t *testing.T) {
 	}
 }
 
-func TestSearchForSenders(t *testing.T) {
+func TestSearchForEntitySenders(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -84,7 +86,8 @@ func TestSearchForSenders(t *testing.T) {
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
-	r := dbSenderReader{dbx}
+	c := persistence.NewFromDB(dbx)
+	r := dbSenderReader{c}
 
 	// excact match
 	search := "Sender1"

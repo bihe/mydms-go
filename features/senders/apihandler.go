@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,7 +16,7 @@ type Sender struct {
 
 // Handler provides handler methods for senders
 type Handler struct {
-	Reader persistence.SenderReader
+	Reader Reader
 }
 
 // GetAllSenders godoc
@@ -25,20 +25,20 @@ type Handler struct {
 // @Tags senders
 // @Produce  json
 // @Success 200 {array} senders.Sender
-// @Failure 401
-// @Failure 403
-// @Failure 404
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 404 {object} core.ProblemDetail
 // @Router /api/v1/senders [get]
 func (h *Handler) GetAllSenders(c echo.Context) error {
 	var (
-		senders    []persistence.Sender
+		senders    []SenderEntity
 		allSenders []Sender
 		err        error
 	)
 	log.Printf("return all available senders.")
 
 	if senders, err = h.Reader.GetAllSenders(); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err)
+		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	for _, t := range senders {
@@ -53,13 +53,13 @@ func (h *Handler) GetAllSenders(c echo.Context) error {
 // @Tags senders
 // @Produce  json
 // @Success 200 {array} senders.Sender
-// @Failure 401
-// @Failure 403
-// @Failure 404
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 404 {object} core.ProblemDetail
 // @Router /api/v1/senders/search [get]
 func (h *Handler) SearchForSenders(c echo.Context) error {
 	var (
-		senders    []persistence.Sender
+		senders    []SenderEntity
 		allSenders []Sender
 		s          string
 		err        error
@@ -69,7 +69,7 @@ func (h *Handler) SearchForSenders(c echo.Context) error {
 	log.Printf("search for senders which match '%s'.", s)
 
 	if senders, err = h.Reader.SearchSenders(s); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err)
+		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	for _, t := range senders {

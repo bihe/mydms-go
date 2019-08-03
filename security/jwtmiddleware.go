@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
 )
 
@@ -26,7 +27,12 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 				var cookie *http.Cookie
 				if cookie, err = c.Request().Cookie(options.CookieName); err != nil {
 					// neither the header nor the cookie supplied a jwt token
-					return RedirectError{http.StatusUnauthorized, "Invalid authentication, no JWT token present!", options.RedirectURL}
+					return core.RedirectError{
+						Status:  http.StatusUnauthorized,
+						Err:     fmt.Errorf("invalid authentication, no JWT token present"),
+						Request: c.Request(),
+						URL:     options.RedirectURL,
+					}
 				}
 				token = cookie.Value
 			}
@@ -46,12 +52,22 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 			var payload JwtTokenPayload
 			if payload, err = ParseJwtToken(token, options.JwtSecret, options.JwtIssuer); err != nil {
 				log.Printf("Could not decode the JWT token payload: %s", err)
-				return RedirectError{http.StatusUnauthorized, fmt.Sprintf("Invalid authentication, could not parse the JWT token: %v", err), options.RedirectURL}
+				return core.RedirectError{
+					Status:  http.StatusUnauthorized,
+					Err:     fmt.Errorf("invalid authentication, could not parse the JWT token: %v", err),
+					Request: c.Request(),
+					URL:     options.RedirectURL,
+				}
 			}
 			var roles []string
 			if roles, err = Authorize(options.RequiredClaim, payload.Claims); err != nil {
 				log.Printf("Insufficient permissions to access the resource: %s", err)
-				return RedirectError{http.StatusForbidden, fmt.Sprintf("Invalid authorization: %v", err), options.RedirectURL}
+				return core.RedirectError{
+					Status:  http.StatusForbidden,
+					Err:     fmt.Errorf("Invalid authorization: %v", err),
+					Request: c.Request(),
+					URL:     options.RedirectURL,
+				}
 			}
 
 			user = User{

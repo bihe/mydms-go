@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bihe/mydms/core"
-	"github.com/bihe/mydms/handler"
 	"github.com/bihe/mydms/persistence"
 	"github.com/bihe/mydms/security"
 	_ "github.com/go-sql-driver/mysql"
@@ -28,6 +27,13 @@ var (
 	// BuildDate provides information when the application was built
 	BuildDate = "2019.07.27 13:45:00"
 )
+
+// ServerArgs is uded to configure the API server
+type ServerArgs struct {
+	HostName   string
+	Port       int
+	ConfigFile string
+}
 
 // @title mydms API
 // @version 2.0
@@ -59,7 +65,7 @@ func main() {
 }
 
 func parseFlags() *ServerArgs {
-	c := NewServerArgs()
+	c := new(ServerArgs)
 	flag.StringVar(&c.HostName, "hostname", "localhost", "the server hostname")
 	flag.IntVar(&c.Port, "port", 3000, "network port to listen")
 	flag.StringVar(&c.ConfigFile, "c", "application.json", "path to the application c file")
@@ -67,14 +73,14 @@ func parseFlags() *ServerArgs {
 	return c
 }
 
-func configFromFile(configFileName string) Configuration {
+func configFromFile(configFileName string) core.Configuration {
 	f, err := os.Open(configFileName)
 	if err != nil {
 		panic(fmt.Sprintf("Could not open specific config file '%s': %v", configFileName, err))
 	}
 	defer f.Close()
 
-	c, err := GetSettings(f)
+	c, err := core.GetSettings(f)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get server config values from file '%s': %v", configFileName, err))
 	}
@@ -88,7 +94,7 @@ func setupAPIServer() (*echo.Echo, string) {
 
 	e := echo.New()
 	e.HideBanner = true
-	e.HTTPErrorHandler = customHTTPErrorHandler
+	e.HTTPErrorHandler = core.CustomErrorHandler
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -111,13 +117,14 @@ func setupAPIServer() (*echo.Echo, string) {
 	e.Static(c.FS.URLPath, c.FS.Path)
 
 	// persistence store && application version
-	conn := persistence.NewConnection(c.DB.Dialect, c.DB.ConnStr)
+	con := persistence.NewConn(c.DB.ConnStr)
 	version := core.VersionInfo{
 		Build:     Build,
 		Version:   Version,
 		BuildDate: BuildDate,
 	}
-	handler.RegisterRoutes(e, conn, version)
+
+	registerRoutes(e, con, c, version)
 
 	// enable swagger for API endpoints
 	e.GET("/swagger/*", echoSwagger.WrapHandler)

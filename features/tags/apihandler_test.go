@@ -8,38 +8,37 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-// implement persistence.TagReader
-// GetAllTags() ([]Tag, error)
-// SearchTags(s string) ([]Tag, error)
+// implement TagReader
+// GetAllTags() ([]TagEntity, error)
+// SearchTags(s string) ([]TagEntity, error)
 type mockTagReader struct {
-	tags []persistence.Tag
+	tags []TagEntity
 }
 
 func (m *mockTagReader) init() {
-	m.tags = []persistence.Tag{
-		persistence.Tag{ID: 1, Name: "tag1"},
-		persistence.Tag{ID: 2, Name: "tag2"},
-		persistence.Tag{ID: 3, Name: "tag3"},
+	m.tags = []TagEntity{
+		TagEntity{ID: 1, Name: "tag1"},
+		TagEntity{ID: 2, Name: "tag2"},
+		TagEntity{ID: 3, Name: "tag3"},
 	}
 }
 
 func (m *mockTagReader) clear() {
-	m.tags = []persistence.Tag{}
+	m.tags = []TagEntity{}
 }
 
-func (m *mockTagReader) GetAllTags() ([]persistence.Tag, error) {
+func (m *mockTagReader) GetAllTags() ([]TagEntity, error) {
 	if len(m.tags) == 0 {
 		return nil, fmt.Errorf("no tags available")
 	}
 	return m.tags, nil
 }
 
-func (m *mockTagReader) SearchTags(s string) ([]persistence.Tag, error) {
+func (m *mockTagReader) SearchTags(s string) ([]TagEntity, error) {
 	if len(m.tags) == 0 {
 		return nil, fmt.Errorf("no tags available")
 	}

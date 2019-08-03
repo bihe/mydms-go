@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,29 +16,29 @@ import (
 // GetAllSenders() ([]Sender, error)
 // SearchSenders(s string) ([]Sender, error)
 type mockSenderReader struct {
-	senders []persistence.Sender
+	senders []SenderEntity
 }
 
 func (m *mockSenderReader) init() {
-	m.senders = []persistence.Sender{
-		persistence.Sender{ID: 1, Name: "sender1"},
-		persistence.Sender{ID: 2, Name: "sender2"},
-		persistence.Sender{ID: 3, Name: "sender3"},
+	m.senders = []SenderEntity{
+		SenderEntity{ID: 1, Name: "sender1"},
+		SenderEntity{ID: 2, Name: "sender2"},
+		SenderEntity{ID: 3, Name: "sender3"},
 	}
 }
 
 func (m *mockSenderReader) clear() {
-	m.senders = []persistence.Sender{}
+	m.senders = []SenderEntity{}
 }
 
-func (m *mockSenderReader) GetAllSenders() ([]persistence.Sender, error) {
+func (m *mockSenderReader) GetAllSenders() ([]SenderEntity, error) {
 	if len(m.senders) == 0 {
 		return nil, fmt.Errorf("no senders available")
 	}
 	return m.senders, nil
 }
 
-func (m *mockSenderReader) SearchSenders(s string) ([]persistence.Sender, error) {
+func (m *mockSenderReader) SearchSenders(s string) ([]SenderEntity, error) {
 	if len(m.senders) == 0 {
 		return nil, fmt.Errorf("no senders available")
 	}
