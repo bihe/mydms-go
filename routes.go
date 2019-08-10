@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/features/appinfo"
+	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
@@ -59,6 +60,17 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 		UploadPath:       config.UP.UploadPath,
 	})
 	u.POST("/file", uh.UploadFile)
+
+	// file
+	f := api.Group("/file")
+	fh := filestore.NewHandler(filestore.S3Config{
+		Region: config.Store.Region,
+		Bucket: config.Store.Bucket,
+		Key:    config.Store.Key,
+		Secret: config.Store.Secret,
+	})
+	f.GET("", fh.GetFile)
+	f.GET("/", fh.GetFile)
 
 	return
 }

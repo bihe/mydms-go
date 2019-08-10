@@ -8,11 +8,12 @@ import (
 
 // Configuration holds the application configuration
 type Configuration struct {
-	Sec Security     `json:"security"`
-	DB  Database     `json:"database"`
-	Log LogConfig    `json:"logging"`
-	FS  FileServer   `json:"fileServer"`
-	UP  UploadConfig `json:"upload"`
+	Sec   Security     `json:"security"`
+	DB    Database     `json:"database"`
+	Log   LogConfig    `json:"logging"`
+	FS    FileServer   `json:"fileServer"`
+	UP    UploadConfig `json:"upload"`
+	Store FileStore    `json:"filestore"`
 }
 
 // Security settings for the application
@@ -66,6 +67,14 @@ type UploadConfig struct {
 	MaxUploadSize int64 `json:"maxUploadSize"`
 	// UploadPath defines a directory where uploaded files are stored
 	UploadPath string `json:"uploadPath"`
+}
+
+// FileStore holds configuration settings for the backend file store
+type FileStore struct {
+	Region string
+	Bucket string
+	Key    string
+	Secret string
 }
 
 // GetSettings returns application configuration values

@@ -19,26 +19,32 @@ const configString = `{
 	"cacheDuration": "10m"
     },
     "database": {
-		"connectionString": "./bookmarks.db"
-	},
-	"upload": {
+	"connectionString": "./bookmarks.db"
+    },
+    "upload": {
         "allowedFileTypes": ["pdf","png"],
         "maxUploadSize": 1000,
         "UploadPath": "/PATH"
     },
     "logging": {
-		"logPrefix": "prefix",
-		"rollingFileLogger": {
-			"filePath": "/temp/file",
-			"maxFileSize": 100,
-			"numberOfMaxBackups": 4,
-			"maxAge": 7,
-			"compressFile": false
-		}
+	"logPrefix": "prefix",
+	"rollingFileLogger": {
+		"filePath": "/temp/file",
+		"maxFileSize": 100,
+		"numberOfMaxBackups": 4,
+		"maxAge": 7,
+		"compressFile": false
+	}
     },
     "fileServer": {
 	    "path": "/tmp",
 	    "urlPath": "/ui"
+    },
+    "filestore": {
+        "region": "_REGION_",
+        "bucket": "_BUCKET_NAME_",
+        "key": "key",
+        "secret": "secret"
     }
 }`
 
@@ -83,4 +89,18 @@ func TestConfigReader(t *testing.T) {
 	if config.FS.URLPath != "/ui" {
 		t.Error("Could not read UrlPath!")
 	}
+
+	if config.Store.Region != "_REGION_" {
+		t.Error("Could not read Store.Region!")
+	}
+	if config.Store.Bucket != "_BUCKET_NAME_" {
+		t.Error("Could not read Store.Bucket!")
+	}
+	if config.Store.Key != "key" {
+		t.Error("Could not read Store.Key!")
+	}
+	if config.Store.Secret != "secret" {
+		t.Error("Could not read Store.Secret!")
+	}
+
 }
