@@ -27,7 +27,7 @@ The REST Api and the UI can be built separately.
 ### Api
 
 `go build`
-  
+
 ## Why
 
 I needed something to keep track of my scanned invoices. Being a software nerd, I created a solution for this purpose. The added benefit for me is, that I have a technology playground to try out new things.
@@ -36,4 +36,4 @@ There are different versions/iterations available.
 
 * [mydms-node](https://github.com/bihe/myDMS-node) - very early adventures in node.js
 * [mydms-java (dropwizard)](https://github.com/bihe/mydms-java/tree/dropwizard) - use dropwizard as the REST backend and documents were stored in Google Drive
-* [mydms-java (spring-boot)](https://github.com/bihe/mydms-java) - use spring-boot/kotlin as the REST backend and documents were stored in Google Drive
+* [mydms-java (spring-boot)](https://github.com/bihe/mydms-java) - use spring-boot/kotlin as the REST backend and documents were stored in AWS S3
