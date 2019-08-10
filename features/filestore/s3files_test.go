@@ -50,6 +50,16 @@ func (m *mockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput,
 	return &s3.PutObjectOutput{}, nil
 }
 
+func TestInitClient(t *testing.T) {
+	service := s3service{
+		config: S3Config{},
+	}
+	err := service.InitClient()
+	if err != nil {
+		t.Errorf("error initializing client")
+	}
+}
+
 func TestGetS3Entry(t *testing.T) {
 	service := s3service{
 		config: S3Config{},

@@ -160,3 +160,17 @@ func TestUploadPeristenceFail(t *testing.T) {
 		t.Errorf("expected error persistence!")
 	}
 }
+
+func TestUploadFileTypeFail(t *testing.T) {
+	// Setup
+	var err error
+	c, h, _ := setup(t, Config{
+		AllowedFileTypes: []string{"png"},
+		MaxUploadSize:    1000,
+	}, "file", fileName)
+
+	err = h.UploadFile(c)
+	if err == nil {
+		t.Errorf("expected error upload file type!")
+	}
+}

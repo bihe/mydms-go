@@ -31,7 +31,19 @@ func (m *mockService) GetFile(filePath string) (FileItem, error) {
 	return FileItem{}, fmt.Errorf("could not get file")
 }
 
-func TestGetFile(t *testing.T) {
+func TestNewHandler(t *testing.T) {
+	h := NewHandler(S3Config{
+		Region: "region",
+		Bucket: "bucket",
+		Key:    "key",
+		Secret: "secret",
+	})
+	if h == nil {
+		t.Errorf("could not create a new handler")
+	}
+}
+
+func TestGetFiles(t *testing.T) {
 
 	cases := []struct {
 		Name string

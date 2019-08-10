@@ -52,9 +52,9 @@ type s3service struct {
 	client s3iface.S3API
 }
 
-// checkClient determines if the backend store client was already initialized
+// InitClient determines if the backend store client was already initialized
 // if it is not initilized it creates a new client using the supplied config
-func (s *s3service) checkClient() error {
+func (s *s3service) InitClient() error {
 	if s.client == nil {
 		sess, err := session.NewSession(&aws.Config{
 			Region:      aws.String(s.config.Region),
@@ -71,7 +71,7 @@ func (s *s3service) checkClient() error {
 
 // GetFile retrieves a file defined by a given path from the backend store
 func (s *s3service) GetFile(filePath string) (FileItem, error) {
-	err := s.checkClient()
+	err := s.InitClient()
 	if err != nil {
 		return FileItem{}, err
 	}
@@ -111,7 +111,7 @@ func (s *s3service) GetFile(filePath string) (FileItem, error) {
 
 // SaveFile stores a file item using a given path to the backend store
 func (s *s3service) SaveFile(file FileItem) error {
-	err := s.checkClient()
+	err := s.InitClient()
 	if err != nil {
 		return err
 	}
