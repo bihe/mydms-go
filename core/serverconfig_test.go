@@ -3,6 +3,8 @@ package core
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const configString = `{
@@ -56,51 +58,28 @@ func TestConfigReader(t *testing.T) {
 		t.Error("Could not read.", err)
 	}
 
-	if config.Sec.JwtSecret != "secret" || config.Sec.Claim.Name != "bookmarks" || config.Sec.LoginRedirect != "https://login.url.com" || config.DB.ConnStr != "./bookmarks.db" {
-		t.Error("Config values not read!")
-	}
-	if config.Sec.CacheDuration != "10m" {
-		t.Error("Config value Sec.CacheDuration not read!")
-	}
+	assert.Equal(t, "./bookmarks.db", config.DB.ConnStr)
 
-	if config.UP.MaxUploadSize != 1000 {
-		t.Error("Config value UP.MaxUploadSiz not read!")
-	}
-	if config.UP.UploadPath != "/PATH" {
-		t.Error("Config value UP.UploadPath not read!")
-	}
-	if len(config.UP.AllowedFileTypes) != 2 {
-		t.Error("Config value UP.AllowedFileTypes not read!")
-	}
+	assert.Equal(t, "https://login.url.com", config.Sec.LoginRedirect)
+	assert.Equal(t, "bookmarks", config.Sec.Claim.Name)
+	assert.Equal(t, "secret", config.Sec.JwtSecret)
+	assert.Equal(t, "10m", config.Sec.CacheDuration)
 
-	if config.Log.Prefix != "prefix" {
-		t.Error("Could not read logging settings!")
-	}
-	if config.Log.Rolling.FilePath != "/temp/file" {
-		t.Error("Could not read rolling file settings!")
-	}
-	if config.Log.Rolling.MaxBackups != 4 {
-		t.Error("Could not read rolling file settings!")
-	}
+	assert.Equal(t, int64(1000), config.UP.MaxUploadSize)
+	assert.Equal(t, "/PATH", config.UP.UploadPath)
+	assert.Equal(t, 2, len(config.UP.AllowedFileTypes))
 
-	if config.FS.Path != "/tmp" {
-		t.Error("Could not read FileServer path!")
-	}
-	if config.FS.URLPath != "/ui" {
-		t.Error("Could not read UrlPath!")
-	}
+	assert.Equal(t, "prefix", config.Log.Prefix)
+	assert.Equal(t, "/temp/file", config.Log.Rolling.FilePath)
+	assert.Equal(t, 4, config.Log.Rolling.MaxBackups)
 
-	if config.Store.Region != "_REGION_" {
-		t.Error("Could not read Store.Region!")
-	}
-	if config.Store.Bucket != "_BUCKET_NAME_" {
-		t.Error("Could not read Store.Bucket!")
-	}
-	if config.Store.Key != "key" {
-		t.Error("Could not read Store.Key!")
-	}
-	if config.Store.Secret != "secret" {
-		t.Error("Could not read Store.Secret!")
-	}
+	assert.Equal(t, "/tmp", config.FS.Path)
+	assert.Equal(t, "/ui", config.FS.URLPath)
+
+	assert.Equal(t, "_REGION_", config.Store.Region)
+	assert.Equal(t, "_BUCKET_NAME_", config.Store.Bucket)
+	assert.Equal(t, "_BUCKET_NAME_", config.Store.Bucket)
+	assert.Equal(t, "key", config.Store.Key)
+	assert.Equal(t, "secret", config.Store.Secret)
 
 }
