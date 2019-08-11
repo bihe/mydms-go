@@ -15,7 +15,6 @@ func TestErrorHandler(t *testing.T) {
 	// Setup
 	var (
 		pd  ProblemDetail
-		err error
 		s   string
 		req *http.Request
 		rec *httptest.ResponseRecorder
@@ -23,37 +22,42 @@ func TestErrorHandler(t *testing.T) {
 	)
 
 	e := echo.New()
-
+	errReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	redirect := "http://redirect"
 	testcases := []struct {
 		Name   string
 		Status int
-		URL    string
+		Error  error
 	}{
 		{
 			Name:   "NotFoundError",
 			Status: http.StatusNotFound,
+			Error:  NotFoundError{Err: fmt.Errorf("error occured"), Request: errReq},
 		},
 		{
 			Name:   "BadRequestError",
 			Status: http.StatusBadRequest,
+			Error:  BadRequestError{Err: fmt.Errorf("error occured"), Request: errReq},
 		},
 		{
 			Name:   "RedirectError",
 			Status: http.StatusTemporaryRedirect,
-			URL:    "http://redirect",
+			Error:  RedirectError{Err: fmt.Errorf("error occured"), Request: errReq, URL: redirect, Status: http.StatusTemporaryRedirect},
 		},
 		{
 			Name:   "RedirectErrorBrowser",
 			Status: http.StatusTemporaryRedirect,
-			URL:    "http://redirect",
+			Error:  RedirectError{Err: fmt.Errorf("error occured"), Request: errReq, URL: redirect, Status: http.StatusTemporaryRedirect},
 		},
 		{
 			Name:   "error",
 			Status: http.StatusInternalServerError,
+			Error:  fmt.Errorf("error occured"),
 		},
 		{
 			Name:   "*echo.HTTPError",
 			Status: http.StatusInternalServerError,
+			Error:  echo.NewHTTPError(http.StatusNotFound, fmt.Errorf("error occured")),
 		},
 	}
 
@@ -63,33 +67,14 @@ func TestErrorHandler(t *testing.T) {
 			rec = httptest.NewRecorder()
 			c = e.NewContext(req, rec)
 
-			switch tc.Name {
-			case "NotFoundError":
-				err = NotFoundError{Err: fmt.Errorf("error occured"), Request: c.Request()}
-				break
-			case "BadRequestError":
-				err = BadRequestError{Err: fmt.Errorf("error occured"), Request: c.Request()}
-				break
-			case "RedirectError":
-				err = RedirectError{Err: fmt.Errorf("error occured"), Request: c.Request(), URL: tc.URL, Status: http.StatusTemporaryRedirect}
-				break
-			case "RedirectErrorBrowser":
+			if tc.Name == "RedirectErrorBrowser" {
 				req.Header.Add("Accept", "text/html")
-				err = RedirectError{Err: fmt.Errorf("error occured"), Request: c.Request(), URL: tc.URL, Status: http.StatusTemporaryRedirect}
-				break
-			case "error":
-				err = fmt.Errorf("error occured")
-				break
-			case "*echo.HTTPError":
-				err = echo.NewHTTPError(http.StatusNotFound, fmt.Errorf("error occured"))
-				break
 			}
-
-			CustomErrorHandler(err, c)
+			CustomErrorHandler(tc.Error, c)
 			assert.Equal(t, tc.Status, rec.Code)
 
 			if tc.Name == "RedirectErrorBrowser" {
-				assert.Equal(t, tc.URL, rec.Header().Get("Location"))
+				assert.Equal(t, redirect, rec.Header().Get("Location"))
 				return
 			}
 
@@ -100,7 +85,7 @@ func TestErrorHandler(t *testing.T) {
 			assert.Equal(t, tc.Status, pd.Status)
 
 			if tc.Name == "RedirectError" {
-				assert.Equal(t, tc.URL, pd.Instance)
+				assert.Equal(t, redirect, pd.Instance)
 			}
 		})
 	}
