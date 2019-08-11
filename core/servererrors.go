@@ -166,7 +166,11 @@ func CustomErrorHandler(err error, c echo.Context) {
 			c.Redirect(http.StatusTemporaryRedirect, redirect.URL)
 			break
 		default:
-			c.JSON(e.Status, e)
+			status := http.StatusTemporaryRedirect
+			if e.Status > 0 {
+				status = e.Status
+			}
+			c.JSON(status, e)
 			break
 		}
 		return

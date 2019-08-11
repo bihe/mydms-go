@@ -8,129 +8,101 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorHandler(t *testing.T) {
 	// Setup
 	var (
-		pd   ProblemDetail
-		jerr error
-		s    string
-		req  *http.Request
-		rec  *httptest.ResponseRecorder
-		c    echo.Context
+		pd  ProblemDetail
+		err error
+		s   string
+		req *http.Request
+		rec *httptest.ResponseRecorder
+		c   echo.Context
 	)
 
 	e := echo.New()
 
-	// NotFoundError
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	nf := NotFoundError{Err: fmt.Errorf("error occured"), Request: c.Request()}
-	CustomErrorHandler(nf, c)
-	s = string(rec.Body.Bytes())
-	if s == "" {
-		t.Errorf("could not stringify result")
-	}
-	jerr = json.Unmarshal(rec.Body.Bytes(), &pd)
-	if jerr != nil {
-		t.Errorf("no result received from error handler")
-	}
-	if pd.Status != http.StatusNotFound {
-		t.Errorf("Wrong status returned")
-	}
-
-	// BadRequestError
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	br := BadRequestError{Err: fmt.Errorf("error occured"), Request: c.Request()}
-	CustomErrorHandler(br, c)
-	s = string(rec.Body.Bytes())
-	if s == "" {
-		t.Errorf("could not stringify result")
-	}
-	jerr = json.Unmarshal(rec.Body.Bytes(), &pd)
-	if jerr != nil {
-		t.Errorf("no result received from error handler")
-	}
-	if pd.Status != http.StatusBadRequest {
-		t.Errorf("Wrong status returned")
+	testcases := []struct {
+		Name   string
+		Status int
+		URL    string
+	}{
+		{
+			Name:   "NotFoundError",
+			Status: http.StatusNotFound,
+		},
+		{
+			Name:   "BadRequestError",
+			Status: http.StatusBadRequest,
+		},
+		{
+			Name:   "RedirectError",
+			Status: http.StatusTemporaryRedirect,
+			URL:    "http://redirect",
+		},
+		{
+			Name:   "RedirectErrorBrowser",
+			Status: http.StatusTemporaryRedirect,
+			URL:    "http://redirect",
+		},
+		{
+			Name:   "error",
+			Status: http.StatusInternalServerError,
+		},
+		{
+			Name:   "*echo.HTTPError",
+			Status: http.StatusInternalServerError,
+		},
 	}
 
-	// RedirectError
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			req = httptest.NewRequest(http.MethodGet, "/", nil)
+			rec = httptest.NewRecorder()
+			c = e.NewContext(req, rec)
 
-	rd := RedirectError{Err: fmt.Errorf("error occured"), Request: c.Request(), URL: "http://redirect"}
-	CustomErrorHandler(rd, c)
-	s = string(rec.Body.Bytes())
-	if s == "" {
-		t.Errorf("could not stringify result")
-	}
-	jerr = json.Unmarshal(rec.Body.Bytes(), &pd)
-	if jerr != nil {
-		t.Errorf("no result received from error handler")
-	}
-	if pd.Status != http.StatusTemporaryRedirect {
-		t.Errorf("Wrong status returned")
-	}
-	if pd.Instance != rd.URL {
-		t.Errorf("Wrong redirect URL")
-	}
+			switch tc.Name {
+			case "NotFoundError":
+				err = NotFoundError{Err: fmt.Errorf("error occured"), Request: c.Request()}
+				break
+			case "BadRequestError":
+				err = BadRequestError{Err: fmt.Errorf("error occured"), Request: c.Request()}
+				break
+			case "RedirectError":
+				err = RedirectError{Err: fmt.Errorf("error occured"), Request: c.Request(), URL: tc.URL, Status: http.StatusTemporaryRedirect}
+				break
+			case "RedirectErrorBrowser":
+				req.Header.Add("Accept", "text/html")
+				err = RedirectError{Err: fmt.Errorf("error occured"), Request: c.Request(), URL: tc.URL, Status: http.StatusTemporaryRedirect}
+				break
+			case "error":
+				err = fmt.Errorf("error occured")
+				break
+			case "*echo.HTTPError":
+				err = echo.NewHTTPError(http.StatusNotFound, fmt.Errorf("error occured"))
+				break
+			}
 
-	// RedirectError - Browser Client
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("Accept", "text/html")
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+			CustomErrorHandler(err, c)
+			assert.Equal(t, tc.Status, rec.Code)
 
-	CustomErrorHandler(rd, c)
-	if rec.Code != http.StatusTemporaryRedirect {
-		t.Errorf("Wrong status returned")
-	}
-	if rec.Header().Get("Location") != rd.URL {
-		t.Errorf("Wrong redirect URL")
-	}
+			if tc.Name == "RedirectErrorBrowser" {
+				assert.Equal(t, tc.URL, rec.Header().Get("Location"))
+				return
+			}
 
-	// error
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+			s = string(rec.Body.Bytes())
+			assert.NotEqual(t, "", s)
+			assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &pd))
 
-	CustomErrorHandler(fmt.Errorf("error occured"), c)
-	s = string(rec.Body.Bytes())
-	if s == "" {
-		t.Errorf("could not stringify result")
-	}
-	jerr = json.Unmarshal(rec.Body.Bytes(), &pd)
-	if jerr != nil {
-		t.Errorf("no result received from error handler")
-	}
-	if pd.Status != http.StatusInternalServerError {
-		t.Errorf("Wrong status returned")
-	}
+			assert.Equal(t, tc.Status, pd.Status)
 
-	// *echo.HTTPError
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	CustomErrorHandler(echo.NewHTTPError(http.StatusNotFound, fmt.Errorf("error occured")), c)
-	s = string(rec.Body.Bytes())
-	if s == "" {
-		t.Errorf("could not stringify result")
-	}
-	jerr = json.Unmarshal(rec.Body.Bytes(), &pd)
-	if jerr != nil {
-		t.Errorf("no result received from error handler")
-	}
-	if pd.Status != http.StatusInternalServerError {
-		t.Errorf("Wrong status returned")
+			if tc.Name == "RedirectError" {
+				assert.Equal(t, tc.URL, pd.Instance)
+			}
+		})
 	}
 }
 

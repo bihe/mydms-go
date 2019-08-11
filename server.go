@@ -47,6 +47,7 @@ func main() {
 
 	// Start server
 	go func() {
+		fmt.Printf("starting mydms.api (v: '%s' d: '%s')\n", Version, BuildDate)
 		if err := api.Start(addr); err != nil {
 			api.Logger.Info("shutting down the server")
 		}

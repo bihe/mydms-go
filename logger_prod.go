@@ -7,11 +7,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/bihe/mydms/core"
+
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // InitLogger performs a setup for the logging mechanism
-func InitLogger(conf LogConfig) {
+func InitLogger(conf core.LogConfig) {
 	f := &lumberjack.Logger{
 		Filename:   conf.Rolling.FilePath,
 		MaxSize:    conf.Rolling.MaxSize,
