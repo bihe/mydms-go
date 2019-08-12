@@ -3,25 +3,43 @@
 package main
 
 import (
-	"io"
-	"log"
+	"fmt"
 	"os"
 
-	"github.com/bihe/mydms/core"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	log "github.com/sirupsen/logrus"
 
-	"gopkg.in/natefinch/lumberjack.v2"
+	"github.com/bihe/mydms/core"
 )
 
 // InitLogger performs a setup for the logging mechanism
-func InitLogger(conf core.LogConfig) {
-	f := &lumberjack.Logger{
-		Filename:   conf.Rolling.FilePath,
-		MaxSize:    conf.Rolling.MaxSize,
-		MaxBackups: conf.Rolling.MaxBackups,
-		MaxAge:     conf.Rolling.MaxAge,
-		Compress:   conf.Rolling.Compress,
+func InitLogger(conf core.LogConfig, e *echo.Echo) {
+	log.SetFormatter(&log.TextFormatter{
+		DisableColors: true,
+		FullTimestamp: true,
+	})
+	var file *os.File
+	file, err := os.OpenFile(conf.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(fmt.Sprintf("cannot use filepath '%s' as a logfile: %v", conf.FilePath, err))
 	}
-	mw := io.MultiWriter(os.Stdout, f)
-	log.SetPrefix(LogPrefix(conf))
-	log.SetOutput(mw)
+	log.SetOutput(file)
+	level, err := log.ParseLevel(conf.LogLevel)
+	if err != nil {
+		panic(fmt.Sprintf("cannot use supplied level '%s' as a loglevel: %v", conf.FilePath, err))
+	}
+	log.SetLevel(level)
+
+	switch conf.LogLevel {
+	case "trace":
+		fallthrough
+	case "debug":
+		fallthrough
+	case "info":
+		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+			Format: "[${time_rfc3339_nano}] (${id}) ${method} '${uri}' [${status}] Host: ${host}, IP: ${remote_ip}, error: '${error}', (latency: ${latency_human}) \n",
+		}))
+		break
+	}
 }

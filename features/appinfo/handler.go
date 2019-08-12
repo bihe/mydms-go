@@ -1,8 +1,9 @@
 package appinfo
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/security"
@@ -45,8 +46,6 @@ type VersionInfo struct {
 	Version string `json:"version"`
 	// BuildNumber defines the specific build
 	BuildNumber string `json:"buildNumber"`
-	// BuildDate specifies the date of the build
-	BuildDate string `json:"buildDate"`
 }
 
 // Handler provides methos for applicatin metadata
@@ -66,7 +65,7 @@ type Handler struct {
 func (h *Handler) GetAppInfo(c echo.Context) error {
 	sc := c.(*security.ServerContext)
 	id := sc.Identity
-	log.Printf("Got user: %s, email: %s", id.Username, id.Email)
+	log.Infof("Got user: %s", id.Username)
 
 	a := AppInfo{
 		UserInfo: UserInfo{
@@ -79,7 +78,6 @@ func (h *Handler) GetAppInfo(c echo.Context) error {
 		VersionInfo: VersionInfo{
 			Version:     h.Version,
 			BuildNumber: h.Build,
-			BuildDate:   h.BuildDate,
 		},
 	}
 	return c.JSON(http.StatusOK, a)

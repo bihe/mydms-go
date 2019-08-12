@@ -2,8 +2,9 @@ package upload
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/persistence"
 )
@@ -45,7 +46,7 @@ func (rw dbReaderWriter) Write(item Upload, a persistence.Atomic) (err error) {
 			case nil:
 				err = atomic.Commit()
 			default:
-				log.Printf("could not complete the transaction: %v", err)
+				log.Errorf("could not complete the transaction: %v", err)
 				if e := atomic.Rollback(); e != nil {
 					err = fmt.Errorf("%v; could not rollback transaction: %v", err, e)
 				}
@@ -89,7 +90,7 @@ func (rw dbReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
 			case nil:
 				err = atomic.Commit()
 			default:
-				log.Printf("could not complete the transaction: %v", err)
+				log.Errorf("could not complete the transaction: %v", err)
 				if e := atomic.Rollback(); e != nil {
 					err = fmt.Errorf("%v; could not rollback transaction: %v", err, e)
 				}

@@ -29,14 +29,8 @@ const configString = `{
         "UploadPath": "/PATH"
     },
     "logging": {
-	"logPrefix": "prefix",
-	"rollingFileLogger": {
-		"filePath": "/temp/file",
-		"maxFileSize": 100,
-		"numberOfMaxBackups": 4,
-		"maxAge": 7,
-		"compressFile": false
-	}
+	"filePath": "/temp/file",
+	"logLevel": "debug"
     },
     "fileServer": {
 	    "path": "/tmp",
@@ -69,9 +63,8 @@ func TestConfigReader(t *testing.T) {
 	assert.Equal(t, "/PATH", config.UP.UploadPath)
 	assert.Equal(t, 2, len(config.UP.AllowedFileTypes))
 
-	assert.Equal(t, "prefix", config.Log.Prefix)
-	assert.Equal(t, "/temp/file", config.Log.Rolling.FilePath)
-	assert.Equal(t, 4, config.Log.Rolling.MaxBackups)
+	assert.Equal(t, "/temp/file", config.Log.FilePath)
+	assert.Equal(t, "debug", config.Log.LogLevel)
 
 	assert.Equal(t, "/tmp", config.FS.Path)
 	assert.Equal(t, "/ui", config.FS.URLPath)

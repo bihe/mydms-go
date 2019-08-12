@@ -1,8 +1,9 @@
 package tags
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
@@ -35,7 +36,7 @@ func (h *Handler) GetAllTags(c echo.Context) error {
 		allTags []Tag
 		err     error
 	)
-	log.Printf("return all available tags.")
+	log.Debug("return all available tags.")
 
 	if tags, err = h.Reader.GetAllTags(); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}

@@ -23,9 +23,7 @@ var (
 	// Version exports the application version
 	Version = "2.0.0"
 	// Build provides information about the application build
-	Build = "1-local"
-	// BuildDate provides information when the application was built
-	BuildDate = "2019.07.27 13:45:00"
+	Build = "20190812.164451"
 )
 
 // ServerArgs is uded to configure the API server
@@ -47,7 +45,7 @@ func main() {
 
 	// Start server
 	go func() {
-		fmt.Printf("starting mydms.api (v: '%s' d: '%s')\n", Version, BuildDate)
+		fmt.Printf("starting mydms.api (%s-%s)\n", Version, Build)
 		if err := api.Start(addr); err != nil {
 			api.Logger.Info("shutting down the server")
 		}
@@ -91,18 +89,16 @@ func configFromFile(configFileName string) core.Configuration {
 func setupAPIServer() (*echo.Echo, string) {
 	args := parseFlags()
 	c := configFromFile(args.ConfigFile)
-	InitLogger(c.Log)
 
 	e := echo.New()
 	e.HideBanner = true
 	e.HTTPErrorHandler = core.CustomErrorHandler
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "[${time_rfc3339_nano}] (${id}) ${method} '${uri}' [${status}] Host: ${host}, IP: ${remote_ip}, error: '${error}', (latency: ${latency_human}) \n",
-	}))
-	e.Use(middleware.Secure())
 
+	InitLogger(c.Log, e)
+
+	e.Use(middleware.Secure())
 	e.Use(security.JwtWithConfig(security.JwtOptions{
 		JwtSecret:  c.Sec.JwtSecret,
 		JwtIssuer:  c.Sec.JwtIssuer,
@@ -120,9 +116,8 @@ func setupAPIServer() (*echo.Echo, string) {
 	// persistence store && application version
 	con := persistence.NewConn(c.DB.ConnStr)
 	version := core.VersionInfo{
-		Build:     Build,
-		Version:   Version,
-		BuildDate: BuildDate,
+		Version: Version,
+		Build:   Build,
 	}
 	registerRoutes(e, con, c, version)
 

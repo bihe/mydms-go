@@ -1,8 +1,9 @@
 package senders
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
@@ -35,7 +36,7 @@ func (h *Handler) GetAllSenders(c echo.Context) error {
 		allSenders []Sender
 		err        error
 	)
-	log.Printf("return all available senders.")
+	log.Debug("return all available senders.")
 
 	if senders, err = h.Reader.GetAllSenders(); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
@@ -66,7 +67,7 @@ func (h *Handler) SearchForSenders(c echo.Context) error {
 	)
 	s = c.QueryParam("name")
 
-	log.Printf("search for senders which match '%s'.", s)
+	log.Debugf("search for senders which match '%s'.", s)
 
 	if senders, err = h.Reader.SearchSenders(s); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}

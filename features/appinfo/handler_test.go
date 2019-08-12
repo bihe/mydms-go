@@ -28,9 +28,8 @@ func TestGetAppInfo(t *testing.T) {
 	}
 	sc := &security.ServerContext{Context: c, Identity: u}
 	v := core.VersionInfo{
-		Build:     "1",
-		Version:   "2",
-		BuildDate: "yyyy.MM.dd HH:mm:ss",
+		Build:   "1",
+		Version: "2",
 	}
 	h := Handler{VersionInfo: v}
 
@@ -44,7 +43,6 @@ func TestGetAppInfo(t *testing.T) {
 		}
 		assert.Equal(t, v.Build, ai.VersionInfo.BuildNumber)
 		assert.Equal(t, v.Version, ai.VersionInfo.Version)
-		assert.Equal(t, v.BuildDate, ai.VersionInfo.BuildDate)
 
 		assert.Equal(t, u.Username, ai.UserInfo.UserName)
 		assert.Equal(t, u.UserID, ai.UserInfo.UserID)

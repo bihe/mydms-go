@@ -40,17 +40,8 @@ type Claim struct {
 
 // LogConfig is used to define settings for the logging process
 type LogConfig struct {
-	Prefix  string        `json:"logPrefix"`
-	Rolling RollingLogger `json:"rollingFileLogger"`
-}
-
-// RollingLogger defines settings to use for rolling file loggers
-type RollingLogger struct {
-	FilePath   string `json:"filePath"`
-	MaxSize    int    `json:"maxFileSize"` // in megabytes
-	MaxBackups int    `json:"numberOfMaxBackups"`
-	MaxAge     int    `json:"maxAge"` // days
-	Compress   bool   `json:"compressFile"`
+	FilePath string `json:"filePath"`
+	LogLevel string `json:"logLevel"`
 }
 
 // FileServer defines the settings for serving static files

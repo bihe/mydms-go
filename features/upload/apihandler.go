@@ -3,13 +3,14 @@ package upload
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/persistence"
@@ -106,7 +107,7 @@ func (h *Handler) UploadFile(c echo.Context) error {
 	if err != nil {
 		ioerr := os.Remove(uploadPath)
 		if ioerr != nil {
-			log.Printf("Clean-Up file-upload. Could not delete temp file: '%s': %v", uploadPath, ioerr)
+			log.Warnf("Clean-Up file-upload. Could not delete temp file: '%s': %v", uploadPath, ioerr)
 		}
 		return core.ServerError{Err: fmt.Errorf("could not save upload item in store: %v", err), Request: c.Request()}
 	}

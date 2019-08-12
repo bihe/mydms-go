@@ -22,6 +22,7 @@ require (
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/markusthoemmes/goautoneg v0.0.0-20190713162725-c6008fefa5b1
 	github.com/mattn/go-sqlite3 v1.11.0 // indirect
+	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.3.0
 	github.com/swaggo/echo-swagger v0.0.0-20190329130007-1219b460a043
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14 // indirect
@@ -32,5 +33,4 @@ require (
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 	golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3 // indirect
 	golang.org/x/tools v0.0.0-20190802220118-1d1727260058 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

@@ -2,10 +2,11 @@ package security
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
@@ -42,16 +43,16 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 			u := cache.get(token)
 			if u != nil {
 				// cache hit, put the user in the context
-				log.Printf("Cache HIT!")
+				log.Debug("Cache HIT!")
 				sc := &ServerContext{Context: c, Identity: *u}
 				return next(sc)
 			}
 
-			log.Printf("Cache MISS!")
+			log.Debug("Cache MISS!")
 
 			var payload JwtTokenPayload
 			if payload, err = ParseJwtToken(token, options.JwtSecret, options.JwtIssuer); err != nil {
-				log.Printf("Could not decode the JWT token payload: %s", err)
+				log.Warnf("Could not decode the JWT token payload: %s", err)
 				return core.RedirectError{
 					Status:  http.StatusUnauthorized,
 					Err:     fmt.Errorf("invalid authentication, could not parse the JWT token: %v", err),
@@ -61,7 +62,7 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 			}
 			var roles []string
 			if roles, err = Authorize(options.RequiredClaim, payload.Claims); err != nil {
-				log.Printf("Insufficient permissions to access the resource: %s", err)
+				log.Warnf("Insufficient permissions to access the resource: %s", err)
 				return core.RedirectError{
 					Status:  http.StatusForbidden,
 					Err:     fmt.Errorf("Invalid authorization: %v", err),
