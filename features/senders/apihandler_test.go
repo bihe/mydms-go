@@ -107,8 +107,8 @@ func TestSearchSenders(t *testing.T) {
 			t.Errorf(invalidJSON, err)
 		}
 		assert.Equal(t, 3, len(senders))
-		assert.Equal(t, "sender1", senders[0].Name)
 		assert.Equal(t, "sender3", senders[len(senders)-1].Name)
+		assert.Equal(t, "sender2", senders[len(senders)-2].Name)
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/", nil)

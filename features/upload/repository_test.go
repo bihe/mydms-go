@@ -50,11 +50,12 @@ func TestWrite(t *testing.T) {
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
+	stmt := "INSERT INTO UPLOADS"
 
 	item := uploadItem
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO UPLOADS").WithArgs(item.ID, item.FileName, item.MimeType, item.Created).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmt).WithArgs(item.ID, item.FileName, item.MimeType, item.Created).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	// now we execute our method
@@ -64,7 +65,7 @@ func TestWrite(t *testing.T) {
 
 	// externally supplied tx
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO UPLOADS").WithArgs(item.ID, item.FileName, item.MimeType, item.Created).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmt).WithArgs(item.ID, item.FileName, item.MimeType, item.Created).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	a, err := c.CreateAtomic()
 	if err = rw.Write(item, a); err != nil {
@@ -114,15 +115,18 @@ func TestRead(t *testing.T) {
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
+	columns := []string{"id", "filename", "mimetype", "created"}
+	q := "SELECT id, filename, mimetype, created FROM UPLOADS"
+	id := "id"
 
 	expected := uploadItem
 
 	// success
-	rows := sqlmock.NewRows([]string{"id", "filename", "mimetype", "created"}).
+	rows := sqlmock.NewRows(columns).
 		AddRow(expected.ID, expected.FileName, expected.MimeType, expected.Created)
-	mock.ExpectQuery("SELECT id, filename, mimetype, created FROM UPLOADS").WithArgs("id").WillReturnRows(rows)
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(rows)
 
-	item, err := rw.Read("id")
+	item, err := rw.Read(id)
 	if err != nil {
 		t.Errorf("could not get item: %v", err)
 	}
@@ -133,10 +137,10 @@ func TestRead(t *testing.T) {
 	assert.Equal(t, expected.Created, item.Created)
 
 	// no result
-	rows = sqlmock.NewRows([]string{"id", "filename", "mimetype", "created"})
-	mock.ExpectQuery("SELECT id, filename, mimetype, created FROM UPLOADS").WithArgs("id").WillReturnRows(rows)
+	rows = sqlmock.NewRows(columns)
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(rows)
 
-	item, err = rw.Read("id")
+	item, err = rw.Read(id)
 	if err == nil {
 		t.Errorf("should have returned an error")
 	}
@@ -157,11 +161,12 @@ func TestDelete(t *testing.T) {
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
+	stmt := "DELETE FROM UPLOADS"
 
 	item := uploadItem
 
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM UPLOADS").WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmt).WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	// now we execute our method
@@ -171,7 +176,7 @@ func TestDelete(t *testing.T) {
 
 	// externally supplied tx
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM UPLOADS").WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmt).WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	a, err := c.CreateAtomic()
 	if err = rw.Delete(item.ID, a); err != nil {

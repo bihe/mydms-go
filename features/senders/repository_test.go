@@ -97,7 +97,7 @@ func TestSearchForEntitySenders(t *testing.T) {
 	// excact match
 	search := "Sender1"
 	rows := sqlmock.NewRows([]string{"id", "name"}).
-		AddRow(1, "Sender1")
+		AddRow(1, search)
 	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
 	senders, err := r.SearchSenders(search)
 	if err != nil {
