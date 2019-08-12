@@ -12,6 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const noTags = "no tags available"
+const invalidJSON = "could not get valid json: %v"
+
 // implement TagReader
 // GetAllTags() ([]TagEntity, error)
 // SearchTags(s string) ([]TagEntity, error)
@@ -33,14 +36,14 @@ func (m *mockTagReader) clear() {
 
 func (m *mockTagReader) GetAllTags() ([]TagEntity, error) {
 	if len(m.tags) == 0 {
-		return nil, fmt.Errorf("no tags available")
+		return nil, fmt.Errorf(noTags)
 	}
 	return m.tags, nil
 }
 
 func (m *mockTagReader) SearchTags(s string) ([]TagEntity, error) {
 	if len(m.tags) == 0 {
-		return nil, fmt.Errorf("no tags available")
+		return nil, fmt.Errorf(noTags)
 	}
 	filtered := m.tags[:0]
 	for _, x := range m.tags {
@@ -50,7 +53,7 @@ func (m *mockTagReader) SearchTags(s string) ([]TagEntity, error) {
 	}
 
 	if len(filtered) == 0 {
-		return nil, fmt.Errorf("no tags available")
+		return nil, fmt.Errorf(noTags)
 	}
 
 	return filtered, nil
@@ -71,7 +74,7 @@ func TestGetAllTags(t *testing.T) {
 		var tags []Tag
 		err := json.Unmarshal(rec.Body.Bytes(), &tags)
 		if err != nil {
-			t.Errorf("could not get valid json: %v", err)
+			t.Errorf(invalidJSON, err)
 		}
 		assert.Equal(t, 3, len(tags))
 		assert.Equal(t, "tag1", tags[0].Name)
@@ -101,7 +104,7 @@ func TestSearchTags(t *testing.T) {
 		var tags []Tag
 		err := json.Unmarshal(rec.Body.Bytes(), &tags)
 		if err != nil {
-			t.Errorf("could not get valid json: %v", err)
+			t.Errorf(invalidJSON, err)
 		}
 		assert.Equal(t, 3, len(tags))
 		assert.Equal(t, "tag1", tags[0].Name)

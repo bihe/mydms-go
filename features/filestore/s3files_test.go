@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/stretchr/testify/assert"
 )
 
 // rather small PDF payload
@@ -26,6 +27,7 @@ startxref
 149
 %EOF
 `
+const mimeType = "application/pdf"
 
 // Define a mock struct to be used in your unit tests of myFunc.
 // https://github.com/aws/aws-sdk-go/blob/master/service/s3/s3iface/interface.go
@@ -38,7 +40,7 @@ func (m *mockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput,
 		return nil, fmt.Errorf("could not get object with Key %s", *input.Key)
 	}
 	return &s3.GetObjectOutput{
-		ContentType: aws.String("application.pdf"),
+		ContentType: aws.String(mimeType),
 		Body:        ioutil.NopCloser(bytes.NewReader([]byte(pdfPayload))),
 	}, nil
 }
@@ -77,7 +79,7 @@ func TestGetS3Entry(t *testing.T) {
 			Expected: FileItem{
 				FolderName: "2009_08_06",
 				FileName:   "20090806-invoice.pdf",
-				MimeType:   "application.pdf",
+				MimeType:   mimeType,
 				Payload:    []byte(pdfPayload),
 			},
 		},
@@ -87,7 +89,7 @@ func TestGetS3Entry(t *testing.T) {
 			Expected: FileItem{
 				FolderName: "2009_08_06",
 				FileName:   "20090806-invoice.pdf",
-				MimeType:   "application.pdf",
+				MimeType:   mimeType,
 				Payload:    []byte(pdfPayload),
 			},
 		},
@@ -107,20 +109,12 @@ func TestGetS3Entry(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			fileItem, err := service.GetFile(c.Path)
 			if c.Name == "invalid path" || c.Name == "invalid file" {
-				if err == nil {
-					t.Fatalf("error for invalid file expected!")
-				}
+				assert.Error(t, err, "error for invalid file expected!")
 				return
 			}
-			if err != nil {
-				t.Fatalf("could not get file from s3 backend: %v", err)
-			}
-			if fileItem.FolderName != c.Expected.FolderName && fileItem.FileName != c.Expected.FileName {
-				t.Fatalf("could not get the correct file-metadata from the backend!")
-			}
-			if len(fileItem.Payload) != len(c.Expected.Payload) {
-				t.Fatalf("incorrect payload size returned!")
-			}
+			assert.NoErrorf(t, err, "could not get file from s3 backend: %v", err)
+			assert.True(t, fileItem.FolderName == c.Expected.FolderName && fileItem.FileName == c.Expected.FileName, "could not get the correct file-metadata from the backend!")
+			assert.Equal(t, len(fileItem.Payload), len(c.Expected.Payload), "incorrect payload size returned!")
 		})
 	}
 
@@ -134,7 +128,7 @@ func TestSaveS3Entry(t *testing.T) {
 	err := service.SaveFile(FileItem{
 		FileName:   "test.pdf",
 		FolderName: "__TEST",
-		MimeType:   "application/pdf",
+		MimeType:   mimeType,
 		Payload:    []byte(pdfPayload),
 	})
 	if err != nil {
@@ -144,7 +138,7 @@ func TestSaveS3Entry(t *testing.T) {
 	err = service.SaveFile(FileItem{
 		FileName:   "",
 		FolderName: "",
-		MimeType:   "application/pdf",
+		MimeType:   mimeType,
 		Payload:    []byte(pdfPayload),
 	})
 	if err == nil {

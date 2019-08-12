@@ -14,6 +14,13 @@ const fatalErr = "an error '%s' was not expected when opening a stub database co
 const expectations = "there were unfulfilled expectations: %s"
 const deleteExpErr = "error was not expected while delete item: %v"
 
+var uploadItem = Upload{
+	ID:       "id",
+	FileName: "filename",
+	MimeType: "mimetype",
+	Created:  time.Now().UTC(),
+}
+
 func TestNewReaderWriter(t *testing.T) {
 	_, err := NewReaderWriter(persistence.Connection{})
 	if err == nil {
@@ -44,12 +51,7 @@ func TestWrite(t *testing.T) {
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
 
-	item := Upload{
-		ID:       "id",
-		FileName: "filename",
-		MimeType: "mimetype",
-		Created:  time.Now(),
-	}
+	item := uploadItem
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO UPLOADS").WithArgs(item.ID, item.FileName, item.MimeType, item.Created).WillReturnResult(sqlmock.NewResult(1, 1))
@@ -86,12 +88,7 @@ func TestWriteError(t *testing.T) {
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
 
-	item := Upload{
-		ID:       "id",
-		FileName: "filename",
-		MimeType: "mimetype",
-		Created:  time.Now(),
-	}
+	item := uploadItem
 
 	mock.ExpectBegin()
 	mock.ExpectRollback()
@@ -118,12 +115,7 @@ func TestRead(t *testing.T) {
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
 
-	expected := Upload{
-		ID:       "id",
-		FileName: "filename",
-		MimeType: "mimetype",
-		Created:  time.Now().UTC(),
-	}
+	expected := uploadItem
 
 	// success
 	rows := sqlmock.NewRows([]string{"id", "filename", "mimetype", "created"}).
@@ -166,12 +158,7 @@ func TestDelete(t *testing.T) {
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
 
-	item := Upload{
-		ID:       "id",
-		FileName: "filename",
-		MimeType: "mimetype",
-		Created:  time.Now(),
-	}
+	item := uploadItem
 
 	mock.ExpectBegin()
 	mock.ExpectExec("DELETE FROM UPLOADS").WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
@@ -208,12 +195,7 @@ func TestDeleteError(t *testing.T) {
 	c := persistence.NewFromDB(dbx)
 	rw := dbReaderWriter{c}
 
-	item := Upload{
-		ID:       "id",
-		FileName: "filename",
-		MimeType: "mimetype",
-		Created:  time.Now(),
-	}
+	item := uploadItem
 
 	mock.ExpectBegin()
 	mock.ExpectRollback()

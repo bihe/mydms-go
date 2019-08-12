@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const errText = "error occured"
+
 func TestErrorHandler(t *testing.T) {
 	// Setup
 	var (
@@ -32,32 +34,32 @@ func TestErrorHandler(t *testing.T) {
 		{
 			Name:   "NotFoundError",
 			Status: http.StatusNotFound,
-			Error:  NotFoundError{Err: fmt.Errorf("error occured"), Request: errReq},
+			Error:  NotFoundError{Err: fmt.Errorf(errText), Request: errReq},
 		},
 		{
 			Name:   "BadRequestError",
 			Status: http.StatusBadRequest,
-			Error:  BadRequestError{Err: fmt.Errorf("error occured"), Request: errReq},
+			Error:  BadRequestError{Err: fmt.Errorf(errText), Request: errReq},
 		},
 		{
 			Name:   "RedirectError",
 			Status: http.StatusTemporaryRedirect,
-			Error:  RedirectError{Err: fmt.Errorf("error occured"), Request: errReq, URL: redirect, Status: http.StatusTemporaryRedirect},
+			Error:  RedirectError{Err: fmt.Errorf(errText), Request: errReq, URL: redirect, Status: http.StatusTemporaryRedirect},
 		},
 		{
 			Name:   "RedirectErrorBrowser",
 			Status: http.StatusTemporaryRedirect,
-			Error:  RedirectError{Err: fmt.Errorf("error occured"), Request: errReq, URL: redirect, Status: http.StatusTemporaryRedirect},
+			Error:  RedirectError{Err: fmt.Errorf(errText), Request: errReq, URL: redirect, Status: http.StatusTemporaryRedirect},
 		},
 		{
 			Name:   "error",
 			Status: http.StatusInternalServerError,
-			Error:  fmt.Errorf("error occured"),
+			Error:  fmt.Errorf(errText),
 		},
 		{
 			Name:   "*echo.HTTPError",
 			Status: http.StatusInternalServerError,
-			Error:  echo.NewHTTPError(http.StatusNotFound, fmt.Errorf("error occured")),
+			Error:  echo.NewHTTPError(http.StatusNotFound, fmt.Errorf(errText)),
 		},
 	}
 
@@ -70,6 +72,7 @@ func TestErrorHandler(t *testing.T) {
 			if tc.Name == "RedirectErrorBrowser" {
 				req.Header.Add("Accept", "text/html")
 			}
+
 			CustomErrorHandler(tc.Error, c)
 			assert.Equal(t, tc.Status, rec.Code)
 

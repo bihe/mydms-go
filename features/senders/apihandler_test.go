@@ -12,6 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const errNoSenders = "no senders available"
+const invalidJSON = "could not get valid json: %v"
+
 // implement persistence.SenderReader
 // GetAllSenders() ([]Sender, error)
 // SearchSenders(s string) ([]Sender, error)
@@ -33,14 +36,14 @@ func (m *mockSenderReader) clear() {
 
 func (m *mockSenderReader) GetAllSenders() ([]SenderEntity, error) {
 	if len(m.senders) == 0 {
-		return nil, fmt.Errorf("no senders available")
+		return nil, fmt.Errorf(errNoSenders)
 	}
 	return m.senders, nil
 }
 
 func (m *mockSenderReader) SearchSenders(s string) ([]SenderEntity, error) {
 	if len(m.senders) == 0 {
-		return nil, fmt.Errorf("no senders available")
+		return nil, fmt.Errorf(errNoSenders)
 	}
 	filtered := m.senders[:0]
 	for _, x := range m.senders {
@@ -50,7 +53,7 @@ func (m *mockSenderReader) SearchSenders(s string) ([]SenderEntity, error) {
 	}
 
 	if len(filtered) == 0 {
-		return nil, fmt.Errorf("no senders available")
+		return nil, fmt.Errorf(errNoSenders)
 	}
 
 	return filtered, nil
@@ -71,7 +74,7 @@ func TestGetAllSenders(t *testing.T) {
 		var senders []Sender
 		err := json.Unmarshal(rec.Body.Bytes(), &senders)
 		if err != nil {
-			t.Errorf("could not get valid json: %v", err)
+			t.Errorf(invalidJSON, err)
 		}
 		assert.Equal(t, 3, len(senders))
 		assert.Equal(t, "sender1", senders[0].Name)
@@ -101,7 +104,7 @@ func TestSearchSenders(t *testing.T) {
 		var senders []Sender
 		err := json.Unmarshal(rec.Body.Bytes(), &senders)
 		if err != nil {
-			t.Errorf("could not get valid json: %v", err)
+			t.Errorf(invalidJSON, err)
 		}
 		assert.Equal(t, 3, len(senders))
 		assert.Equal(t, "sender1", senders[0].Name)

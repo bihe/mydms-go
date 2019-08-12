@@ -10,6 +10,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const fatalErr = "an error '%s' was not expected when opening a stub database connection"
+const expectations = "there were unfulfilled expectations: %s"
+
 func TestNewTagReader(t *testing.T) {
 	_, err := NewReader(persistence.Connection{})
 	if err == nil {
@@ -18,7 +21,7 @@ func TestNewTagReader(t *testing.T) {
 
 	db, _, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
@@ -32,19 +35,20 @@ func TestNewTagReader(t *testing.T) {
 func TestGetAllEntityTags(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	r := dbTagReader{c}
+	q := "SELECT t.id, t.name FROM TAGS t ORDER BY name ASC"
 
 	// success
 	rows := sqlmock.NewRows([]string{"id", "name"}).
 		AddRow(1, "Tag1").
 		AddRow(2, "Tag2")
-	mock.ExpectQuery("SELECT t.id, t.name FROM TAGS t ORDER BY name ASC").WillReturnRows(rows)
+	mock.ExpectQuery(q).WillReturnRows(rows)
 
 	tags, err := r.GetAllTags()
 	if err != nil {
@@ -56,7 +60,7 @@ func TestGetAllEntityTags(t *testing.T) {
 
 	// no results
 	rows = sqlmock.NewRows([]string{"id", "name"})
-	mock.ExpectQuery("SELECT t.id, t.name FROM TAGS t ORDER BY name ASC").WillReturnRows(rows)
+	mock.ExpectQuery(q).WillReturnRows(rows)
 	tags, err = r.GetAllTags()
 	if err != nil {
 		t.Errorf("could not get all tags: %v", err)
@@ -66,7 +70,7 @@ func TestGetAllEntityTags(t *testing.T) {
 	}
 
 	// error
-	mock.ExpectQuery("SELECT t.id, t.name FROM TAGS t ORDER BY name ASC").WillReturnError(fmt.Errorf("no rows"))
+	mock.ExpectQuery(q).WillReturnError(fmt.Errorf("no rows"))
 	tags, err = r.GetAllTags()
 	if err == nil {
 		t.Errorf("error during SQL expected")
@@ -74,26 +78,27 @@ func TestGetAllEntityTags(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }
 
 func TestSearchForEntityTags(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf(fatalErr, err)
 	}
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	r := dbTagReader{c}
+	q := "SELECT t.id, t.name FROM TAGS t"
 
 	// excact match
 	search := "Tag1"
 	rows := sqlmock.NewRows([]string{"id", "name"}).
 		AddRow(1, "Tag1")
-	mock.ExpectQuery("SELECT t.id, t.name FROM TAGS t").WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
+	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
 	tags, err := r.SearchTags(search)
 	if err != nil {
 		t.Errorf("could not search for tags by '%s': %v", "Tag1", err)
@@ -105,7 +110,7 @@ func TestSearchForEntityTags(t *testing.T) {
 	// no match
 	search = "_no_tag_"
 	rows = sqlmock.NewRows([]string{"id", "name"})
-	mock.ExpectQuery("SELECT t.id, t.name FROM TAGS t").WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
+	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
 	tags, err = r.SearchTags(search)
 	if err != nil {
 		t.Errorf("could not search for tags by '%s': %v", "Tag1", err)
@@ -116,7 +121,7 @@ func TestSearchForEntityTags(t *testing.T) {
 
 	// error
 	search = "foo"
-	mock.ExpectQuery("SELECT t.id, t.name FROM TAGS t").WithArgs("%" + strings.ToLower(search) + "%").WillReturnError(fmt.Errorf("no rows"))
+	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnError(fmt.Errorf("no rows"))
 	tags, err = r.SearchTags(search)
 	if err == nil {
 		t.Errorf("error during SQL expected")
@@ -124,6 +129,6 @@ func TestSearchForEntityTags(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
+		t.Errorf(expectations, err)
 	}
 }
