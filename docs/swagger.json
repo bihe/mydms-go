@@ -48,6 +48,70 @@
                 }
             }
         },
+        "/api/v1/file": {
+            "get": {
+                "description": "use a base64 encoded path to fetch the binary payload of a file from the store",
+                "tags": [
+                    "filestore"
+                ],
+                "summary": "get a file from the backend store",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Path",
+                        "name": "path",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/senders": {
             "get": {
                 "description": "returns all available senders in alphabetical order",
@@ -102,6 +166,15 @@
                     "senders"
                 ],
                 "summary": "search for senders",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SearchString",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -190,6 +263,15 @@
                     "tags"
                 ],
                 "summary": "search for tags",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SearchString",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -321,10 +403,6 @@
         "appinfo.VersionInfo": {
             "type": "object",
             "properties": {
-                "buildDate": {
-                    "description": "BuildDate specifies the date of the build",
-                    "type": "string"
-                },
                 "buildNumber": {
                     "description": "BuildNumber defines the specific build",
                     "type": "string"

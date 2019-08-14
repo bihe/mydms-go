@@ -31,9 +31,6 @@ definitions:
     type: object
   appinfo.VersionInfo:
     properties:
-      buildDate:
-        description: BuildDate specifies the date of the build
-        type: string
       buildNumber:
         description: BuildNumber defines the specific build
         type: string
@@ -119,6 +116,51 @@ paths:
       summary: provides information about the application
       tags:
       - appinfo
+  /api/v1/file:
+    get:
+      description: use a base64 encoded path to fetch the binary payload of a file
+        from the store
+      parameters:
+      - description: Path
+        in: query
+        name: path
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: integer
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+      summary: get a file from the backend store
+      tags:
+      - filestore
   /api/v1/senders:
     get:
       description: returns all available senders in alphabetical order
@@ -152,6 +194,12 @@ paths:
   /api/v1/senders/search:
     get:
       description: returns all senders which match a given search-term
+      parameters:
+      - description: SearchString
+        in: query
+        name: name
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -212,6 +260,12 @@ paths:
   /api/v1/tags/search:
     get:
       description: returns all tags which match a given search-term
+      parameters:
+      - description: SearchString
+        in: query
+        name: name
+        required: true
+        type: string
       produces:
       - application/json
       responses:

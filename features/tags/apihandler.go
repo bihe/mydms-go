@@ -53,6 +53,7 @@ func (h *Handler) GetAllTags(c echo.Context) error {
 // @Description returns all tags which match a given search-term
 // @Tags tags
 // @Produce  json
+// @Param name query string true "SearchString"
 // @Success 200 {array} tags.Tag
 // @Failure 401 {object} core.ProblemDetail
 // @Failure 403 {object} core.ProblemDetail

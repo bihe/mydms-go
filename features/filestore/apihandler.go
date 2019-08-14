@@ -20,7 +20,18 @@ func NewHandler(config S3Config) *Handler {
 	return &Handler{fs}
 }
 
-// GetFile returns
+// GetFile godoc
+// @Summary get a file from the backend store
+// @Description use a base64 encoded path to fetch the binary payload of a file from the store
+// @Tags filestore
+// @Param path query string true "Path"
+// @Success 200 {array} byte
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 400 {object} core.ProblemDetail
+// @Failure 404 {object} core.ProblemDetail
+// @Failure 500 {object} core.ProblemDetail
+// @Router /api/v1/file [get]
 func (h *Handler) GetFile(c echo.Context) error {
 	path := c.QueryParam("path")
 	decodedPath, err := base64.StdEncoding.DecodeString(path)

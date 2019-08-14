@@ -53,6 +53,7 @@ func (h *Handler) GetAllSenders(c echo.Context) error {
 // @Description returns all senders which match a given search-term
 // @Tags senders
 // @Produce  json
+// @Param name query string true "SearchString"
 // @Success 200 {array} senders.Sender
 // @Failure 401 {object} core.ProblemDetail
 // @Failure 403 {object} core.ProblemDetail
