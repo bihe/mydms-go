@@ -46,29 +46,30 @@ type dbDocumentReaderWriter struct {
 	c persistence.Connection
 }
 
-func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
-	var atomic persistence.Atomic
-
-	defer func() {
-		if !a.Active {
-			switch err {
-			case nil:
-				err = atomic.Commit()
-			default:
-				log.Errorf("could not complete the transaction: %v", err)
-				if e := atomic.Rollback(); e != nil {
-					err = fmt.Errorf("%v; could not rollback transaction: %v", err, e)
-				}
+func finshTX(txActive bool, atomic persistence.Atomic, err error) error {
+	if !txActive {
+		switch err {
+		case nil:
+			return atomic.Commit()
+		default:
+			log.Errorf("could not complete the transaction: %v", err)
+			if e := atomic.Rollback(); e != nil {
+				return fmt.Errorf("%v; could not rollback transaction: %v", err, e)
 			}
 		}
+	}
+	return nil
+}
+
+func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
+	var atomic *persistence.Atomic
+
+	defer func() {
+		err = persistence.HandleTX(!a.Active, atomic, err)
 	}()
 
-	atomic = a
-	if !a.Active {
-		atomic, err = rw.c.CreateAtomic()
-		if err != nil {
-			return DocumentEntity{}, err
-		}
+	if atomic, err = persistence.CheckTX(rw.c, &a); err != nil {
+		return
 	}
 
 	return DocumentEntity{}, nil

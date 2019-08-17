@@ -1,6 +1,12 @@
 package persistence
 
-import "github.com/jmoiron/sqlx"
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+
+	log "github.com/sirupsen/logrus"
+)
 
 // Connection defines a storage/database/... connection
 type Connection struct {
@@ -33,4 +39,34 @@ func (c Connection) CreateAtomic() (Atomic, error) {
 		return Atomic{}, err
 	}
 	return Atomic{Tx: tx, Active: true}, nil
+}
+
+// HandleTX completes the given transaction
+// if an error is supplied a rollback is performed
+func HandleTX(complete bool, atomic *Atomic, err error) error {
+	if complete {
+		switch err {
+		case nil:
+			return atomic.Commit()
+		default:
+			log.Errorf("could not complete the transaction: %v", err)
+			if e := atomic.Rollback(); e != nil {
+				return fmt.Errorf("%v; could not rollback transaction: %v", err, e)
+			}
+		}
+	}
+	return err
+}
+
+// CheckTX returns a new Atomic object if the supplied object is inactive
+// if the supplied object is active - the same object is returned
+func CheckTX(c Connection, a *Atomic) (*Atomic, error) {
+	if !a.Active {
+		atomic, err := c.CreateAtomic()
+		if err != nil {
+			return nil, err
+		}
+		return &atomic, nil
+	}
+	return a, nil
 }

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/bihe/mydms/persistence"
 )
 
@@ -38,29 +36,16 @@ func NewReaderWriter(c persistence.Connection) (ReaderWriter, error) {
 
 // Write saves an upload item
 func (rw dbReaderWriter) Write(item Upload, a persistence.Atomic) (err error) {
-	var atomic persistence.Atomic
+	var atomic *persistence.Atomic
 
 	defer func() {
-		if !a.Active {
-			switch err {
-			case nil:
-				err = atomic.Commit()
-			default:
-				log.Errorf("could not complete the transaction: %v", err)
-				if e := atomic.Rollback(); e != nil {
-					err = fmt.Errorf("%v; could not rollback transaction: %v", err, e)
-				}
-			}
-		}
+		err = persistence.HandleTX(!a.Active, atomic, err)
 	}()
 
-	atomic = a
-	if !a.Active {
-		atomic, err = rw.c.CreateAtomic()
-		if err != nil {
-			return
-		}
+	if atomic, err = persistence.CheckTX(rw.c, &a); err != nil {
+		return
 	}
+
 	_, err = atomic.NamedExec("INSERT INTO UPLOADS (id,filename,mimetype,created) VALUES (:id, :filename, :mimetype, :created)", &item)
 	if err != nil {
 		err = fmt.Errorf("cannot write upload item: %v", err)
@@ -82,28 +67,14 @@ func (rw dbReaderWriter) Read(id string) (Upload, error) {
 
 // Delete removes the item with the specified id from the store
 func (rw dbReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
-	var atomic persistence.Atomic
+	var atomic *persistence.Atomic
 
 	defer func() {
-		if !a.Active {
-			switch err {
-			case nil:
-				err = atomic.Commit()
-			default:
-				log.Errorf("could not complete the transaction: %v", err)
-				if e := atomic.Rollback(); e != nil {
-					err = fmt.Errorf("%v; could not rollback transaction: %v", err, e)
-				}
-			}
-		}
+		err = persistence.HandleTX(!a.Active, atomic, err)
 	}()
 
-	atomic = a
-	if !a.Active {
-		atomic, err = rw.c.CreateAtomic()
-		if err != nil {
-			return
-		}
+	if atomic, err = persistence.CheckTX(rw.c, &a); err != nil {
+		return
 	}
 	_, err = atomic.Exec("DELETE FROM UPLOADS WHERE id = ?", id)
 	if err != nil {
