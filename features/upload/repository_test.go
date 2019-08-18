@@ -69,7 +69,7 @@ func TestWrite(t *testing.T) {
 
 	a, err := c.CreateAtomic()
 	if err = rw.Write(item, a); err != nil {
-		t.Errorf(deleteExpErr, err)
+		t.Errorf("error was not expected for insert item: %v", err)
 	}
 
 	// we make sure that all expectations were met
