@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bihe/mydms/persistence"
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -165,5 +166,68 @@ func TestSaveError(t *testing.T) {
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
 		t.Errorf("error was expected while insert item")
+	}
+}
+
+func TestRead(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbDocumentReaderWriter{c}
+	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
+	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
+	id := "id"
+
+	expected := DocumentEntity{
+		ID:          "id",
+		Title:       "title",
+		FileName:    "filename",
+		AltID:       "altid",
+		PreviewLink: "previewlink",
+		Amount:      1.0,
+		Created:     time.Now().UTC(),
+		Modified:    mysql.NullTime{},
+		TagList:     "tags",
+		SenderList:  "senders",
+	}
+
+	// success
+	rows := sqlmock.NewRows(columns).
+		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified)
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(rows)
+
+	item, err := rw.Get(id)
+	if err != nil {
+		t.Errorf("could not get item: %v", err)
+	}
+
+	assert.Equal(t, expected.ID, item.ID)
+	assert.Equal(t, expected.Title, item.Title)
+	assert.Equal(t, expected.FileName, item.FileName)
+	assert.Equal(t, expected.AltID, item.AltID)
+	assert.Equal(t, expected.PreviewLink, item.PreviewLink)
+	assert.Equal(t, expected.Amount, item.Amount)
+	assert.Equal(t, expected.TagList, item.TagList)
+	assert.Equal(t, expected.SenderList, item.SenderList)
+	assert.Equal(t, expected.Created, item.Created)
+	assert.Equal(t, expected.Modified, item.Modified)
+
+	// no result
+	rows = sqlmock.NewRows(columns)
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(rows)
+
+	item, err = rw.Get(id)
+	if err == nil {
+		t.Errorf("should have returned an error")
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
 	}
 }

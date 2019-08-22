@@ -22,7 +22,7 @@ type DocumentEntity struct {
 	PreviewLink string         `db:"previewlink"`
 	Amount      float32        `db:"amount"`
 	Created     time.Time      `db:"created"`
-	Modified    mysql.NullTime `db:"modified"`
+	Modified    mysql.NullTime `db:"modified"` // go1.13 https://tip.golang.org/pkg/database/sql/#NullTime
 	TagList     string         `db:"taglist"`
 	SenderList  string         `db:"senderlist"`
 }
@@ -40,9 +40,9 @@ type DocSearch struct {
 
 // ReaderWriter is the CRUD interface for documents in the persistence store
 type ReaderWriter interface {
-	Get(id int64) (DocumentEntity, error)
+	Get(id string) (d DocumentEntity, err error)
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
-	Delete(id int64, a persistence.Atomic) (err error)
+	Delete(id string, a persistence.Atomic) (err error)
 	Search(s DocSearch) ([]DocumentEntity, error)
 }
 
@@ -50,6 +50,9 @@ type dbDocumentReaderWriter struct {
 	c persistence.Connection
 }
 
+// Save a document entry. Either create or update the entry, based on availability
+// if a valid atomic object is supplied use it for transaction handling - otherwise
+// the operation is completed in an atomic manner
 func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
 	var (
 		atomic  *persistence.Atomic
@@ -107,6 +110,16 @@ func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) 
 	}
 
 	return doc, nil
+}
+
+// Get retuns a document by the given id
+func (rw dbDocumentReaderWriter) Get(id string) (d DocumentEntity, err error) {
+	err = rw.c.Get(&d, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=?", id)
+	if err != nil {
+		err = fmt.Errorf("cannot get upload-item by id '%s': %v", id, err)
+		return
+	}
+	return d, nil
 }
 
 // found: https://www.admfactory.com/how-to-generate-a-fixed-length-random-string-using-golang/
