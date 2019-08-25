@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 const fatalErr = "an error '%s' was not expected when opening a stub database connection"
 const expectations = "there were unfulfilled expectations: %s"
+const deleteExpErr = "error was not expected while delete item: %v"
 
 func TestSave(t *testing.T) {
 	db, mock, err := sqlmock.New()
@@ -188,7 +190,7 @@ func TestRead(t *testing.T) {
 		Title:       "title",
 		FileName:    "filename",
 		AltID:       "altid",
-		PreviewLink: "previewlink",
+		PreviewLink: sql.NullString{String: "previewlink", Valid: true},
 		Amount:      1.0,
 		Created:     time.Now().UTC(),
 		Modified:    mysql.NullTime{},
@@ -224,6 +226,171 @@ func TestRead(t *testing.T) {
 	item, err = rw.Get(id)
 	if err == nil {
 		t.Errorf("should have returned an error")
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbDocumentReaderWriter{c}
+	stmt := "DELETE FROM DOCUMENTS"
+
+	item := DocumentEntity{
+		ID: "id",
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(stmt).WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	// now we execute our method
+	if err = rw.Delete(item.ID, persistence.Atomic{}); err != nil {
+		t.Errorf(deleteExpErr, err)
+	}
+
+	// externally supplied tx
+	mock.ExpectBegin()
+	mock.ExpectExec(stmt).WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	a, err := c.CreateAtomic()
+	if err = rw.Delete(item.ID, a); err != nil {
+		t.Errorf("error was not expected while delete item: %v", err)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func TestDeleteError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbDocumentReaderWriter{c}
+
+	item := DocumentEntity{
+		ID: "id",
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+
+	// now we execute our method
+	if err = rw.Delete(item.ID, persistence.Atomic{}); err == nil {
+		t.Errorf("error was expected for insert item")
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func TestSearch(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbDocumentReaderWriter{c}
+	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
+
+	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
+	qc := "SELECT count\\(id\\) FROM DOCUMENTS"
+
+	expected := DocumentEntity{
+		ID:          "id",
+		Title:       "title",
+		FileName:    "filename",
+		AltID:       "altid",
+		PreviewLink: sql.NullString{String: "previewlink", Valid: true},
+		Amount:      1.0,
+		Created:     time.Now().UTC(),
+		Modified:    mysql.NullTime{},
+		TagList:     "tags",
+		SenderList:  "senders",
+	}
+
+	// success
+	cr := sqlmock.NewRows([]string{"count(id)"}).AddRow(1)
+	mock.ExpectQuery(qc).WillReturnRows(cr)
+
+	dr := sqlmock.NewRows(columns).
+		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified)
+	mock.ExpectQuery(q).WillReturnRows(dr)
+
+	ts := time.Now().UTC()
+	from := ts.Add(-time.Hour)
+	until := ts.Add(time.Hour)
+	search := DocSearch{
+		Skip:   1,
+		Limit:  1,
+		Title:  "title",
+		Tag:    "tags",
+		Sender: "senders",
+		From:   from,
+		Until:  until,
+	}
+	order := []OrderBy{
+		OrderBy{Order: DESC, Field: "modified"},
+		OrderBy{Order: ASC, Field: "title"},
+	}
+
+	doc, err := rw.Search(search, order)
+	if err != nil {
+		t.Errorf("could not query documents: %v", err)
+	}
+	if len(doc.Documents) == 0 {
+		t.Errorf("document list empty, nothing returned")
+	}
+
+	item := doc.Documents[0]
+
+	assert.Equal(t, expected.ID, item.ID)
+	assert.Equal(t, expected.Title, item.Title)
+	assert.Equal(t, expected.FileName, item.FileName)
+	assert.Equal(t, expected.AltID, item.AltID)
+	assert.Equal(t, expected.PreviewLink, item.PreviewLink)
+	assert.Equal(t, expected.Amount, item.Amount)
+	assert.Equal(t, expected.TagList, item.TagList)
+	assert.Equal(t, expected.SenderList, item.SenderList)
+	assert.Equal(t, expected.Created, item.Created)
+	assert.Equal(t, expected.Modified, item.Modified)
+
+	// failure1
+	mock.ExpectQuery(qc).WillReturnError(fmt.Errorf("could not get count"))
+	_, err = rw.Search(search, order)
+	if err == nil {
+		t.Errorf("error expected")
+	}
+
+	// failure2
+	cr = sqlmock.NewRows([]string{"count(id)"}).AddRow(1)
+	mock.ExpectQuery(qc).WillReturnRows(cr)
+	mock.ExpectQuery(q).WillReturnError(fmt.Errorf("could not get documents"))
+	_, err = rw.Search(search, order)
+	if err == nil {
+		t.Errorf("error expected")
 	}
 
 	// we make sure that all expectations were met
