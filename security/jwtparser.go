@@ -26,7 +26,6 @@ func ParseJwtToken(token, tokenSecret, issuer string) (JwtTokenPayload, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
 		return []byte(tokenSecret), nil
 	})
 	if err != nil {

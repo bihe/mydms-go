@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// JwtWithConfig returns the configured JWT Autch middleware
+// JwtWithConfig returns the configured JWT Auth middleware
 func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 	cache := newMemCache(parseDuration(options.CacheDuration))
 

@@ -88,8 +88,8 @@ type dbDocumentReaderWriter struct {
 }
 
 // Save a document entry. Either create or update the entry, based on availability
-// if a valid atomic object is supplied use it for transaction handling - otherwise
-// the operation is completed in an atomic manner
+// if a valid/active atomic object is supplied the transaction handling is done by the caller
+// otherwise a new transaction is created for the scope of the method
 func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
 	var (
 		atomic  *persistence.Atomic
@@ -180,7 +180,7 @@ func (rw dbDocumentReaderWriter) Delete(id string, a persistence.Atomic) (err er
 	return
 }
 
-// Search for documents based on the supplied search-boject 'DocSearch'
+// Search for documents based on the supplied search-object 'DocSearch'
 // the slice of order-bys is used to defined the query sort-order
 func (rw dbDocumentReaderWriter) Search(s DocSearch, order []OrderBy) (d PagedDocuments, err error) {
 	var query string
