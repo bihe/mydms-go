@@ -22,7 +22,7 @@ var uploadItem = Upload{
 }
 
 func TestNewReaderWriter(t *testing.T) {
-	_, err := NewReaderWriter(persistence.Connection{})
+	_, err := NewRepository(persistence.Connection{})
 	if err == nil {
 		t.Errorf("no reader without connection possible")
 	}
@@ -34,7 +34,7 @@ func TestNewReaderWriter(t *testing.T) {
 	defer db.Close()
 
 	dbx := sqlx.NewDb(db, "mysql")
-	_, err = NewReaderWriter(persistence.NewFromDB(dbx))
+	_, err = NewRepository(persistence.NewFromDB(dbx))
 	if err != nil {
 		t.Errorf("could not get a reader: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestWrite(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbReaderWriter{c}
+	rw := dbRepository{c}
 	stmt := "INSERT INTO UPLOADS"
 
 	item := uploadItem
@@ -87,7 +87,7 @@ func TestWriteError(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbReaderWriter{c}
+	rw := dbRepository{c}
 
 	item := uploadItem
 
@@ -114,7 +114,7 @@ func TestRead(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbReaderWriter{c}
+	rw := dbRepository{c}
 	columns := []string{"id", "filename", "mimetype", "created"}
 	q := "SELECT id, filename, mimetype, created FROM UPLOADS"
 	id := "id"
@@ -160,7 +160,7 @@ func TestDelete(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbReaderWriter{c}
+	rw := dbRepository{c}
 	stmt := "DELETE FROM UPLOADS"
 
 	item := uploadItem
@@ -198,7 +198,7 @@ func TestDeleteError(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbReaderWriter{c}
+	rw := dbRepository{c}
 
 	item := uploadItem
 

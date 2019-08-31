@@ -61,6 +61,35 @@ definitions:
           dereferenced, it provide human-readable documentation for the problem
         type: string
     type: object
+  documents.Document:
+    properties:
+      alternativeId:
+        type: string
+      amount:
+        type: number
+      created:
+        type: string
+      fileName:
+        type: string
+      id:
+        type: string
+      modified:
+        type: string
+      previewLink:
+        type: string
+      senders:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      uploadFileToken:
+        type: string
+    type: object
   senders.Sender:
     properties:
       id:
@@ -116,6 +145,49 @@ paths:
       summary: provides information about the application
       tags:
       - appinfo
+  /api/v1/documents/{id}:
+    get:
+      description: use the supplied id to lookup the document from the store
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/documents.Document'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+      summary: get a document by id
+      tags:
+      - documents
   /api/v1/file:
     get:
       description: use a base64 encoded path to fetch the binary payload of a file

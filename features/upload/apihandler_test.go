@@ -39,20 +39,20 @@ const contentType = "Content-Type"
 // Write(item Upload, a persistence.Atomic) (err error)
 // Read(id string) (Upload, error)
 // Delete(id string, a persistence.Atomic) (err error)
-type mockReaderWriter struct{}
+type mockRepository struct{}
 
-func (m mockReaderWriter) Write(item Upload, a persistence.Atomic) (err error) {
+func (m mockRepository) Write(item Upload, a persistence.Atomic) (err error) {
 	if item.FileName == fileName {
 		return nil
 	}
 	return fmt.Errorf("error")
 }
 
-func (m mockReaderWriter) Read(id string) (Upload, error) {
+func (m mockRepository) Read(id string) (Upload, error) {
 	return Upload{}, nil
 }
 
-func (m mockReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
+func (m mockRepository) Delete(id string, a persistence.Atomic) (err error) {
 	return nil
 }
 
@@ -72,7 +72,7 @@ func setup(t *testing.T, config Config, formfield, file string) (echo.Context, *
 	req.Header.Add(contentType, ctype)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	rw := mockReaderWriter{}
+	rw := mockRepository{}
 
 	tmp := config.UploadPath
 	if config.UploadPath == "" {

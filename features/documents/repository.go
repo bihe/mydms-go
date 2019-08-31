@@ -75,8 +75,8 @@ type OrderBy struct {
 	Order SortDirection
 }
 
-// Respository is the CRUD interface for documents in the persistence store
-type Respository interface {
+// Repository is the CRUD interface for documents in the persistence store
+type Repository interface {
 	Get(id string) (d DocumentEntity, err error)
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
 	Delete(id string, a persistence.Atomic) (err error)
@@ -84,7 +84,7 @@ type Respository interface {
 }
 
 // NewRepository creates a new instance using an existing connection
-func NewRepository(c persistence.Connection) (Respository, error) {
+func NewRepository(c persistence.Connection) (Repository, error) {
 	if !c.Active {
 		return nil, fmt.Errorf("no repository connection available")
 	}

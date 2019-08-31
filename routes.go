@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/features/appinfo"
+	"github.com/bihe/mydms/features/documents"
 	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
@@ -14,20 +15,25 @@ import (
 // registerRoutes defines the routes of the available handlers
 func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Configuration, version core.VersionInfo) (err error) {
 	var (
-		tr  tags.Reader
-		sr  senders.Reader
-		urw upload.ReaderWriter
+		tr tags.Repository
+		sr senders.Repository
+		ur upload.Repository
+		dr documents.Repository
 	)
 
-	urw, err = upload.NewReaderWriter(con)
+	ur, err = upload.NewRepository(con)
 	if err != nil {
 		return
 	}
-	tr, err = tags.NewReader(con)
+	tr, err = tags.NewRepository(con)
 	if err != nil {
 		return
 	}
-	sr, err = senders.NewReader(con)
+	sr, err = senders.NewRepository(con)
+	if err != nil {
+		return
+	}
+	dr, err = documents.NewRepository(con)
 	if err != nil {
 		return
 	}
@@ -42,19 +48,19 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 
 	// tags
 	t := api.Group("/tags")
-	th := &tags.Handler{Reader: tr}
+	th := &tags.Handler{R: tr}
 	t.GET("", th.GetAllTags)
 	t.GET("/search", th.SearchForTags)
 
 	// senders
 	s := api.Group("/senders")
-	sh := &senders.Handler{Reader: sr}
+	sh := &senders.Handler{R: sr}
 	s.GET("", sh.GetAllSenders)
 	s.GET("/search", sh.SearchForSenders)
 
 	// upload
 	u := api.Group("/upload")
-	uh := upload.NewHandler(urw, upload.Config{
+	uh := upload.NewHandler(ur, upload.Config{
 		AllowedFileTypes: config.UP.AllowedFileTypes,
 		MaxUploadSize:    config.UP.MaxUploadSize,
 		UploadPath:       config.UP.UploadPath,
@@ -71,6 +77,11 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 	})
 	f.GET("", fh.GetFile)
 	f.GET("/", fh.GetFile)
+
+	// documents
+	d := api.Group("/documents")
+	dh := documents.NewHandler(dr, tr, sr, ur)
+	d.GET("/:id", dh.GetDocumentByID)
 
 	return
 }

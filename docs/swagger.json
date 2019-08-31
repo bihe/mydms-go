@@ -48,6 +48,68 @@
                 }
             }
         },
+        "/api/v1/documents/{id}": {
+            "get": {
+                "description": "use the supplied id to lookup the document from the store",
+                "tags": [
+                    "documents"
+                ],
+                "summary": "get a document by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/documents.Document"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/file": {
             "get": {
                 "description": "use a base64 encoded path to fetch the binary payload of a file from the store",
@@ -434,6 +496,50 @@
                 },
                 "type": {
                     "description": "Type is a URI reference [RFC3986] that identifies the\nproblem type.  This specification encourages that, when\ndereferenced, it provide human-readable documentation for the problem",
+                    "type": "string"
+                }
+            }
+        },
+        "documents.Document": {
+            "type": "object",
+            "properties": {
+                "alternativeId": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "created": {
+                    "type": "string"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "modified": {
+                    "type": "string"
+                },
+                "previewLink": {
+                    "type": "string"
+                },
+                "senders": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "uploadFileToken": {
                     "type": "string"
                 }
             }

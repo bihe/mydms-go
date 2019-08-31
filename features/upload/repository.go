@@ -15,27 +15,27 @@ type Upload struct {
 	Created  time.Time `db:"created"`
 }
 
-// ReaderWriter provides CRUD methods for uploads
-type ReaderWriter interface {
+// Repository provides CRUD methods for uploads
+type Repository interface {
 	Write(item Upload, a persistence.Atomic) (err error)
 	Read(id string) (Upload, error)
 	Delete(id string, a persistence.Atomic) (err error)
 }
 
-type dbReaderWriter struct {
+type dbRepository struct {
 	c persistence.Connection
 }
 
-// NewReaderWriter creates a new instance using an existing connection
-func NewReaderWriter(c persistence.Connection) (ReaderWriter, error) {
+// NewRepository creates a new instance using an existing connection
+func NewRepository(c persistence.Connection) (Repository, error) {
 	if !c.Active {
 		return nil, fmt.Errorf("no repository connection available")
 	}
-	return dbReaderWriter{c}, nil
+	return dbRepository{c}, nil
 }
 
 // Write saves an upload item
-func (rw dbReaderWriter) Write(item Upload, a persistence.Atomic) (err error) {
+func (rw dbRepository) Write(item Upload, a persistence.Atomic) (err error) {
 	var atomic *persistence.Atomic
 
 	defer func() {
@@ -55,7 +55,7 @@ func (rw dbReaderWriter) Write(item Upload, a persistence.Atomic) (err error) {
 }
 
 // Read gets an item by it's ID
-func (rw dbReaderWriter) Read(id string) (Upload, error) {
+func (rw dbRepository) Read(id string) (Upload, error) {
 	u := Upload{}
 
 	err := rw.c.Get(&u, "SELECT id, filename, mimetype, created FROM UPLOADS WHERE id=?", id)
@@ -66,7 +66,7 @@ func (rw dbReaderWriter) Read(id string) (Upload, error) {
 }
 
 // Delete removes the item with the specified id from the store
-func (rw dbReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
+func (rw dbRepository) Delete(id string, a persistence.Atomic) (err error) {
 	var atomic *persistence.Atomic
 
 	defer func() {

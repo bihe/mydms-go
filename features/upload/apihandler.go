@@ -26,13 +26,13 @@ type Result struct {
 
 // Handler defines the upload API
 type Handler struct {
-	rw     ReaderWriter
+	r      Repository
 	config Config
 }
 
 // NewHandler returns a pointer to a new handler instance
-func NewHandler(rw ReaderWriter, config Config) *Handler {
-	return &Handler{rw: rw, config: config}
+func NewHandler(r Repository, config Config) *Handler {
+	return &Handler{r: r, config: config}
 }
 
 // UploadFile godoc
@@ -103,7 +103,7 @@ func (h *Handler) UploadFile(c echo.Context) error {
 		MimeType: mimeType,
 		Created:  time.Now().UTC(),
 	}
-	err = h.rw.Write(u, persistence.Atomic{})
+	err = h.r.Write(u, persistence.Atomic{})
 	if err != nil {
 		ioerr := os.Remove(uploadPath)
 		if ioerr != nil {
