@@ -17,7 +17,7 @@ type Sender struct {
 
 // Handler provides handler methods for senders
 type Handler struct {
-	Reader Reader
+	R Repository
 }
 
 // GetAllSenders godoc
@@ -38,7 +38,7 @@ func (h *Handler) GetAllSenders(c echo.Context) error {
 	)
 	log.Debug("return all available senders.")
 
-	if senders, err = h.Reader.GetAllSenders(); err != nil {
+	if senders, err = h.R.GetAllSenders(); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
@@ -70,7 +70,7 @@ func (h *Handler) SearchForSenders(c echo.Context) error {
 
 	log.Debugf("search for senders which match '%s'.", s)
 
-	if senders, err = h.Reader.SearchSenders(s); err != nil {
+	if senders, err = h.R.SearchSenders(s); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 

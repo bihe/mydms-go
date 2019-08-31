@@ -18,6 +18,25 @@ const fatalErr = "an error '%s' was not expected when opening a stub database co
 const expectations = "there were unfulfilled expectations: %s"
 const deleteExpErr = "error was not expected while delete item: %v"
 
+func TestNewRepository(t *testing.T) {
+	_, err := NewRepository(persistence.Connection{})
+	if err == nil {
+		t.Errorf("no reader without connection possible")
+	}
+
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	_, err = NewRepository(persistence.NewFromDB(dbx))
+	if err != nil {
+		t.Errorf("could not get a repository: %v", err)
+	}
+}
+
 func TestSave(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -29,7 +48,7 @@ func TestSave(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbDocumentReaderWriter{c}
+	rw := dbRepository{c}
 
 	item := DocumentEntity{
 		Title:      "title",
@@ -133,7 +152,7 @@ func TestSaveError(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbDocumentReaderWriter{c}
+	rw := dbRepository{c}
 
 	item := DocumentEntity{
 		Title:      "title",
@@ -180,7 +199,7 @@ func TestRead(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbDocumentReaderWriter{c}
+	rw := dbRepository{c}
 	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
 	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
 	id := "id"
@@ -243,7 +262,7 @@ func TestDelete(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbDocumentReaderWriter{c}
+	rw := dbRepository{c}
 	stmt := "DELETE FROM DOCUMENTS"
 
 	item := DocumentEntity{
@@ -283,7 +302,7 @@ func TestDeleteError(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbDocumentReaderWriter{c}
+	rw := dbRepository{c}
 
 	item := DocumentEntity{
 		ID: "id",
@@ -312,7 +331,7 @@ func TestSearch(t *testing.T) {
 
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
-	rw := dbDocumentReaderWriter{c}
+	rw := dbRepository{c}
 	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
 
 	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"

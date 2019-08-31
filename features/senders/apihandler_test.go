@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,11 +19,12 @@ const invalidJSON = "could not get valid json: %v"
 // implement persistence.SenderReader
 // GetAllSenders() ([]Sender, error)
 // SearchSenders(s string) ([]Sender, error)
-type mockSenderReader struct {
+// SaveSenders(senders []string, a persistence.Atomic) (err error)
+type mockRepository struct {
 	senders []SenderEntity
 }
 
-func (m *mockSenderReader) init() {
+func (m *mockRepository) init() {
 	m.senders = []SenderEntity{
 		SenderEntity{ID: 1, Name: "sender1"},
 		SenderEntity{ID: 2, Name: "sender2"},
@@ -30,18 +32,18 @@ func (m *mockSenderReader) init() {
 	}
 }
 
-func (m *mockSenderReader) clear() {
+func (m *mockRepository) clear() {
 	m.senders = []SenderEntity{}
 }
 
-func (m *mockSenderReader) GetAllSenders() ([]SenderEntity, error) {
+func (m *mockRepository) GetAllSenders() ([]SenderEntity, error) {
 	if len(m.senders) == 0 {
 		return nil, fmt.Errorf(errNoSenders)
 	}
 	return m.senders, nil
 }
 
-func (m *mockSenderReader) SearchSenders(s string) ([]SenderEntity, error) {
+func (m *mockRepository) SearchSenders(s string) ([]SenderEntity, error) {
 	if len(m.senders) == 0 {
 		return nil, fmt.Errorf(errNoSenders)
 	}
@@ -59,6 +61,10 @@ func (m *mockSenderReader) SearchSenders(s string) ([]SenderEntity, error) {
 	return filtered, nil
 }
 
+func (m *mockRepository) SaveSenders(senders []string, a persistence.Atomic) (err error) {
+	return nil
+}
+
 func TestGetAllSenders(t *testing.T) {
 	// Setup
 	e := echo.New()
@@ -66,9 +72,9 @@ func TestGetAllSenders(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	m := &mockSenderReader{}
+	m := &mockRepository{}
 	m.init()
-	h := Handler{Reader: m}
+	h := Handler{R: m}
 	if assert.NoError(t, h.GetAllSenders(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		var senders []Sender
@@ -82,7 +88,7 @@ func TestGetAllSenders(t *testing.T) {
 	}
 
 	m.clear()
-	h = Handler{Reader: m}
+	h = Handler{R: m}
 	assert.Error(t, h.GetAllSenders(c))
 }
 
@@ -96,9 +102,9 @@ func TestSearchSenders(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	m := &mockSenderReader{}
+	m := &mockRepository{}
 	m.init()
-	h := Handler{Reader: m}
+	h := Handler{R: m}
 	if assert.NoError(t, h.SearchForSenders(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		var senders []Sender

@@ -17,7 +17,7 @@ type Tag struct {
 
 // Handler provides handler methods for tags
 type Handler struct {
-	Reader Reader
+	R Repository
 }
 
 // GetAllTags godoc
@@ -38,7 +38,7 @@ func (h *Handler) GetAllTags(c echo.Context) error {
 	)
 	log.Debug("return all available tags.")
 
-	if tags, err = h.Reader.GetAllTags(); err != nil {
+	if tags, err = h.R.GetAllTags(); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
@@ -70,7 +70,7 @@ func (h *Handler) SearchForTags(c echo.Context) error {
 
 	log.Printf("search for tags which match '%s'.", s)
 
-	if tags, err = h.Reader.SearchTags(s); err != nil {
+	if tags, err = h.R.SearchTags(s); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 

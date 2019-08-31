@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,14 +16,15 @@ import (
 const noTags = "no tags available"
 const invalidJSON = "could not get valid json: %v"
 
-// implement TagReader
+// implement Repository
 // GetAllTags() ([]TagEntity, error)
 // SearchTags(s string) ([]TagEntity, error)
-type mockTagReader struct {
+// SaveTags(tags []string, a persistence.Atomic) (err error)
+type mockTagRepo struct {
 	tags []TagEntity
 }
 
-func (m *mockTagReader) init() {
+func (m *mockTagRepo) init() {
 	m.tags = []TagEntity{
 		TagEntity{ID: 1, Name: "tag1"},
 		TagEntity{ID: 2, Name: "tag2"},
@@ -30,18 +32,18 @@ func (m *mockTagReader) init() {
 	}
 }
 
-func (m *mockTagReader) clear() {
+func (m *mockTagRepo) clear() {
 	m.tags = []TagEntity{}
 }
 
-func (m *mockTagReader) GetAllTags() ([]TagEntity, error) {
+func (m *mockTagRepo) GetAllTags() ([]TagEntity, error) {
 	if len(m.tags) == 0 {
 		return nil, fmt.Errorf(noTags)
 	}
 	return m.tags, nil
 }
 
-func (m *mockTagReader) SearchTags(s string) ([]TagEntity, error) {
+func (m *mockTagRepo) SearchTags(s string) ([]TagEntity, error) {
 	if len(m.tags) == 0 {
 		return nil, fmt.Errorf(noTags)
 	}
@@ -59,6 +61,10 @@ func (m *mockTagReader) SearchTags(s string) ([]TagEntity, error) {
 	return filtered, nil
 }
 
+func (m *mockTagRepo) SaveTags(tags []string, a persistence.Atomic) (err error) {
+	return nil
+}
+
 func TestGetAllTags(t *testing.T) {
 	// Setup
 	e := echo.New()
@@ -66,9 +72,9 @@ func TestGetAllTags(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	m := &mockTagReader{}
+	m := &mockTagRepo{}
 	m.init()
-	h := Handler{Reader: m}
+	h := Handler{R: m}
 	if assert.NoError(t, h.GetAllTags(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		var tags []Tag
@@ -82,7 +88,7 @@ func TestGetAllTags(t *testing.T) {
 	}
 
 	m.clear()
-	h = Handler{Reader: m}
+	h = Handler{R: m}
 	assert.Error(t, h.GetAllTags(c))
 }
 
@@ -96,9 +102,9 @@ func TestSearchTags(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	m := &mockTagReader{}
+	m := &mockTagRepo{}
 	m.init()
-	h := Handler{Reader: m}
+	h := Handler{R: m}
 	if assert.NoError(t, h.SearchForTags(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		var tags []Tag

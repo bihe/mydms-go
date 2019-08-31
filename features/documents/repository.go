@@ -75,22 +75,30 @@ type OrderBy struct {
 	Order SortDirection
 }
 
-// ReaderWriter is the CRUD interface for documents in the persistence store
-type ReaderWriter interface {
+// Respository is the CRUD interface for documents in the persistence store
+type Respository interface {
 	Get(id string) (d DocumentEntity, err error)
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
 	Delete(id string, a persistence.Atomic) (err error)
 	Search(s DocSearch, order []OrderBy) (PagedDocuments, error)
 }
 
-type dbDocumentReaderWriter struct {
+// NewRepository creates a new instance using an existing connection
+func NewRepository(c persistence.Connection) (Respository, error) {
+	if !c.Active {
+		return nil, fmt.Errorf("no repository connection available")
+	}
+	return dbRepository{c}, nil
+}
+
+type dbRepository struct {
 	c persistence.Connection
 }
 
 // Save a document entry. Either create or update the entry, based on availability
 // if a valid/active atomic object is supplied the transaction handling is done by the caller
 // otherwise a new transaction is created for the scope of the method
-func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
+func (rw dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
 	var (
 		atomic  *persistence.Atomic
 		newEnty bool
@@ -150,7 +158,7 @@ func (rw dbDocumentReaderWriter) Save(doc DocumentEntity, a persistence.Atomic) 
 }
 
 // Get retuns a document by the given id
-func (rw dbDocumentReaderWriter) Get(id string) (d DocumentEntity, err error) {
+func (rw dbRepository) Get(id string) (d DocumentEntity, err error) {
 	err = rw.c.Get(&d, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=?", id)
 	if err != nil {
 		err = fmt.Errorf("cannot get document by id '%s': %v", id, err)
@@ -160,7 +168,7 @@ func (rw dbDocumentReaderWriter) Get(id string) (d DocumentEntity, err error) {
 }
 
 // Delete a document by its id
-func (rw dbDocumentReaderWriter) Delete(id string, a persistence.Atomic) (err error) {
+func (rw dbRepository) Delete(id string, a persistence.Atomic) (err error) {
 	var (
 		atomic *persistence.Atomic
 	)
@@ -182,7 +190,7 @@ func (rw dbDocumentReaderWriter) Delete(id string, a persistence.Atomic) (err er
 
 // Search for documents based on the supplied search-object 'DocSearch'
 // the slice of order-bys is used to defined the query sort-order
-func (rw dbDocumentReaderWriter) Search(s DocSearch, order []OrderBy) (d PagedDocuments, err error) {
+func (rw dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, err error) {
 	var query string
 	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
 	qc := "SELECT count(id) FROM DOCUMENTS"
