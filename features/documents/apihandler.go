@@ -50,7 +50,7 @@ func NewHandler(dr Repository, tr tags.Repository, sr senders.Repository, ur upl
 // @Summary get a document by id
 // @Description use the supplied id to lookup the document from the store
 // @Tags documents
-// @Param id path string true "Account ID"
+// @Param id path string true "document ID"
 // @Success 200 {object} documents.Document
 // @Failure 401 {object} core.ProblemDetail
 // @Failure 403 {object} core.ProblemDetail
