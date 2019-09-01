@@ -79,7 +79,7 @@ type OrderBy struct {
 type Repository interface {
 	persistence.BaseRepository
 	Get(id string) (d DocumentEntity, err error)
-	Exists(id string, a persistence.Atomic) (err error)
+	Exists(id string, a persistence.Atomic) (filePath string, err error)
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
 	Delete(id string, a persistence.Atomic) (err error)
 	Search(s DocSearch, order []OrderBy) (PagedDocuments, error)
@@ -176,7 +176,7 @@ func (rw dbRepository) Get(id string) (d DocumentEntity, err error) {
 }
 
 // Exists checks if a given id is available
-func (rw dbRepository) Exists(id string, a persistence.Atomic) (err error) {
+func (rw dbRepository) Exists(id string, a persistence.Atomic) (filePath string, err error) {
 	var (
 		atomic *persistence.Atomic
 	)
@@ -189,16 +189,14 @@ func (rw dbRepository) Exists(id string, a persistence.Atomic) (err error) {
 		return
 	}
 
-	var c int
-	err = atomic.Get(&c, "SELECT count(id) FROM DOCUMENTS WHERE id = ?", id)
+	var filename string
+	err = atomic.Get(&filename, "SELECT filename FROM DOCUMENTS WHERE id = ?", id)
 	if err != nil {
-		err = fmt.Errorf("cannot query document %v", err)
+		err = fmt.Errorf("cannot query document or document not available. %v", err)
 		return
 	}
-	if c == 0 {
-		err = fmt.Errorf("the document with id '%s' is not available", id)
-	}
-	return
+	return filename, nil
+
 }
 
 // Delete a document by its id

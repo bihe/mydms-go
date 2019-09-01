@@ -15,8 +15,7 @@ type Handler struct {
 }
 
 // NewHandler returns a pointer to a new handler instance
-func NewHandler(config S3Config) *Handler {
-	fs := NewService(config)
+func NewHandler(fs FileService) *Handler {
 	return &Handler{fs}
 }
 

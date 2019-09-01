@@ -331,25 +331,30 @@ func TestExists(t *testing.T) {
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	rw := dbRepository{c}
-	q := "SELECT count\\(id\\) FROM DOCUMENTS"
+	q := "SELECT filename FROM DOCUMENTS"
 	id := "id"
-	rows := []string{"count(id)"}
+	fileName := "test.pdf"
+	rows := []string{"filename"}
 
 	mock.ExpectBegin()
-	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(1))
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(fileName))
 	mock.ExpectCommit()
 
 	// now we execute our method
-	if err = rw.Exists(id, persistence.Atomic{}); err != nil {
+	var f string
+	if f, err = rw.Exists(id, persistence.Atomic{}); err != nil {
 		t.Errorf(existsErr, err)
+	}
+	if f != fileName {
+		t.Errorf("filename does not match")
 	}
 
 	// externally supplied tx
 	mock.ExpectBegin()
-	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(1))
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(fileName))
 
 	a, err := c.CreateAtomic()
-	if err = rw.Exists(id, a); err != nil {
+	if _, err = rw.Exists(id, a); err != nil {
 		t.Errorf(existsErr, err)
 	}
 
@@ -358,16 +363,7 @@ func TestExists(t *testing.T) {
 	mock.ExpectQuery(q).WithArgs(id).WillReturnError(fmt.Errorf("error"))
 	mock.ExpectRollback()
 
-	if err = rw.Exists(id, persistence.Atomic{}); err == nil {
-		t.Errorf(expected)
-	}
-
-	// notfound
-	mock.ExpectBegin()
-	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(0))
-	mock.ExpectRollback()
-
-	if err = rw.Exists(id, persistence.Atomic{}); err == nil {
+	if _, err = rw.Exists(id, persistence.Atomic{}); err == nil {
 		t.Errorf(expected)
 	}
 

@@ -32,12 +32,12 @@ func (m *mockService) GetFile(filePath string) (FileItem, error) {
 }
 
 func TestNewHandler(t *testing.T) {
-	h := NewHandler(S3Config{
+	h := NewHandler(NewService(S3Config{
 		Region: "region",
 		Bucket: "bucket",
 		Key:    "key",
 		Secret: "secret",
-	})
+	}))
 	if h == nil {
 		t.Errorf("could not create a new handler")
 	}

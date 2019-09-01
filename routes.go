@@ -68,13 +68,14 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 	u.POST("/file", uh.UploadFile)
 
 	// file
-	f := api.Group("/file")
-	fh := filestore.NewHandler(filestore.S3Config{
+	storeSvc := filestore.NewService(filestore.S3Config{
 		Region: config.Store.Region,
 		Bucket: config.Store.Bucket,
 		Key:    config.Store.Key,
 		Secret: config.Store.Secret,
 	})
+	f := api.Group("/file")
+	fh := filestore.NewHandler(storeSvc)
 	f.GET("", fh.GetFile)
 	f.GET("/", fh.GetFile)
 
@@ -85,7 +86,7 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 		TagRepo:    tr,
 		SenderRepo: sr,
 		UploadRepo: ur,
-	})
+	}, storeSvc)
 	d.GET("/:id", dh.GetDocumentByID)
 	d.DELETE("/:id", dh.DeleteDocumentByID)
 

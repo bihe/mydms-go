@@ -52,6 +52,13 @@ func (m *mockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput,
 	return &s3.PutObjectOutput{}, nil
 }
 
+func (m *mockS3Client) DeleteObject(input *s3.DeleteObjectInput) (*s3.DeleteObjectOutput, error) {
+	if *input.Key == "/" {
+		return nil, fmt.Errorf("could not delete object with Key %s", *input.Key)
+	}
+	return &s3.DeleteObjectOutput{}, nil
+}
+
 func TestInitClient(t *testing.T) {
 	service := s3service{
 		config: S3Config{},
@@ -141,6 +148,22 @@ func TestSaveS3Entry(t *testing.T) {
 		MimeType:   mimeType,
 		Payload:    []byte(pdfPayload),
 	})
+	if err == nil {
+		t.Errorf("expected error invalid path")
+	}
+}
+
+func TestDeleteS3Entry(t *testing.T) {
+	service := s3service{
+		config: S3Config{},
+		client: &mockS3Client{},
+	}
+	err := service.DeleteFile("test.pdf")
+	if err != nil {
+		t.Errorf("could not get delete file from s3 backend: %v", err)
+	}
+
+	err = service.DeleteFile("/")
 	if err == nil {
 		t.Errorf("expected error invalid path")
 	}

@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bihe/mydms/core"
+	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
@@ -71,7 +72,8 @@ type Result struct {
 
 // Handler provides handler methods for documents
 type Handler struct {
-	r Repositories
+	r  Repositories
+	fs filestore.FileService
 }
 
 // Repositories combines necessary repositories for the document handler
@@ -83,8 +85,8 @@ type Repositories struct {
 }
 
 // NewHandler returns a pointer to a new handler instance
-func NewHandler(repos Repositories) *Handler {
-	return &Handler{r: repos}
+func NewHandler(repos Repositories, fs filestore.FileService) *Handler {
+	return &Handler{r: repos, fs: fs}
 }
 
 // GetDocumentByID godoc
@@ -176,18 +178,23 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 	}()
 
 	// before we delete the entry, check if it is really available!
-	err = h.r.DocRepo.Exists(id, atomic)
+	fileName, err := h.r.DocRepo.Exists(id, atomic)
 	if err != nil {
 		log.Warnf("the document '%s' is not available, %v", id, err)
 		err = fmt.Errorf("document '%s' not available", id)
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
-	// TODO: also delete the file from the backend-store!
-
 	err = h.r.DocRepo.Delete(id, atomic)
 	if err != nil {
 		log.Warnf("error during delete operation of '%s', %v", id, err)
+		err = fmt.Errorf("could not delete '%s', %v", id, err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	err = h.fs.DeleteFile(fileName)
+	if err != nil {
+		log.Errorf("could not delete file in backend store '%s', %v", fileName, err)
 		err = fmt.Errorf("could not delete '%s', %v", id, err)
 		return core.ServerError{Err: err, Request: c.Request()}
 	}

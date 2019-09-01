@@ -28,6 +28,7 @@ type FileItem struct {
 type FileService interface {
 	SaveFile(file FileItem) error
 	GetFile(filePath string) (FileItem, error)
+	DeleteFile(filePath string) error
 }
 
 // --------------------------------------------------------------------------
@@ -127,6 +128,23 @@ func (s *s3service) SaveFile(file FileItem) error {
 	})
 	if err != nil {
 		return fmt.Errorf("could not upload file item '%s' to S3 storage. %v", storagePath, err)
+	}
+	return nil
+}
+
+// DeleteFile removes the item using the specified paht
+func (s *s3service) DeleteFile(filePath string) error {
+	err := s.InitClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(filePath),
+	})
+	if err != nil {
+		return fmt.Errorf("could not delete the file item '%s'. %v", filePath, err)
 	}
 	return nil
 }
