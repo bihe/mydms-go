@@ -17,6 +17,34 @@ import (
 const fatalErr = "an error '%s' was not expected when opening a stub database connection"
 const expectations = "there were unfulfilled expectations: %s"
 const deleteExpErr = "error was not expected while delete item: %v"
+const existsErr = "error was not expected while checking for existence of item: %v"
+const expected = "error expected"
+
+func TestAtomic(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	repo, err := NewRepository(persistence.NewFromDB(dbx))
+	if err != nil {
+		t.Errorf("could not get a repository: %v", err)
+	}
+
+	mock.ExpectBegin()
+
+	_, err = repo.CreateAtomic()
+	if err != nil {
+		t.Errorf("could not ceate a new atomic object: %v", err)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
 
 func TestNewRepository(t *testing.T) {
 	_, err := NewRepository(persistence.Connection{})
@@ -285,6 +313,62 @@ func TestDelete(t *testing.T) {
 	a, err := c.CreateAtomic()
 	if err = rw.Delete(item.ID, a); err != nil {
 		t.Errorf("error was not expected while delete item: %v", err)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func TestExists(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbRepository{c}
+	q := "SELECT count\\(id\\) FROM DOCUMENTS"
+	id := "id"
+	rows := []string{"count(id)"}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(1))
+	mock.ExpectCommit()
+
+	// now we execute our method
+	if err = rw.Exists(id, persistence.Atomic{}); err != nil {
+		t.Errorf(existsErr, err)
+	}
+
+	// externally supplied tx
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(1))
+
+	a, err := c.CreateAtomic()
+	if err = rw.Exists(id, a); err != nil {
+		t.Errorf(existsErr, err)
+	}
+
+	// error
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WithArgs(id).WillReturnError(fmt.Errorf("error"))
+	mock.ExpectRollback()
+
+	if err = rw.Exists(id, persistence.Atomic{}); err == nil {
+		t.Errorf(expected)
+	}
+
+	// notfound
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(sqlmock.NewRows(rows).AddRow(0))
+	mock.ExpectRollback()
+
+	if err = rw.Exists(id, persistence.Atomic{}); err == nil {
+		t.Errorf(expected)
 	}
 
 	// we make sure that all expectations were met

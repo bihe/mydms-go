@@ -21,6 +21,32 @@ var uploadItem = Upload{
 	Created:  time.Now().UTC(),
 }
 
+func TestAtomic(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	repo, err := NewRepository(persistence.NewFromDB(dbx))
+	if err != nil {
+		t.Errorf("could not get a repository: %v", err)
+	}
+
+	mock.ExpectBegin()
+
+	_, err = repo.CreateAtomic()
+	if err != nil {
+		t.Errorf("could not ceate a new atomic object: %v", err)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
 func TestNewReaderWriter(t *testing.T) {
 	_, err := NewRepository(persistence.Connection{})
 	if err == nil {

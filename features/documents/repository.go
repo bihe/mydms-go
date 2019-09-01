@@ -77,7 +77,9 @@ type OrderBy struct {
 
 // Repository is the CRUD interface for documents in the persistence store
 type Repository interface {
+	persistence.BaseRepository
 	Get(id string) (d DocumentEntity, err error)
+	Exists(id string, a persistence.Atomic) (err error)
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
 	Delete(id string, a persistence.Atomic) (err error)
 	Search(s DocSearch, order []OrderBy) (PagedDocuments, error)
@@ -93,6 +95,11 @@ func NewRepository(c persistence.Connection) (Repository, error) {
 
 type dbRepository struct {
 	c persistence.Connection
+}
+
+// CreateAtomic returns a new atomic object
+func (rw dbRepository) CreateAtomic() (persistence.Atomic, error) {
+	return rw.c.CreateAtomic()
 }
 
 // Save a document entry. Either create or update the entry, based on availability
@@ -165,6 +172,32 @@ func (rw dbRepository) Get(id string) (d DocumentEntity, err error) {
 		return
 	}
 	return d, nil
+}
+
+// Exists checks if a given id is available
+func (rw dbRepository) Exists(id string, a persistence.Atomic) (err error) {
+	var (
+		atomic *persistence.Atomic
+	)
+
+	defer func() {
+		err = persistence.HandleTX(!a.Active, atomic, err)
+	}()
+
+	if atomic, err = persistence.CheckTX(rw.c, &a); err != nil {
+		return
+	}
+
+	var c int
+	err = atomic.Get(&c, "SELECT count(id) FROM DOCUMENTS WHERE id = ?", id)
+	if err != nil {
+		err = fmt.Errorf("cannot query document %v", err)
+		return
+	}
+	if c == 0 {
+		err = fmt.Errorf("the document with id '%s' is not available", id)
+	}
+	return
 }
 
 // Delete a document by its id

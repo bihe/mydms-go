@@ -90,6 +90,13 @@ definitions:
       uploadFileToken:
         type: string
     type: object
+  documents.Result:
+    properties:
+      message:
+        type: string
+      result:
+        type: integer
+    type: object
   senders.Sender:
     properties:
       id:
@@ -146,10 +153,52 @@ paths:
       tags:
       - appinfo
   /api/v1/documents/{id}:
+    delete:
+      description: use the supplied id to delete the document from the store
+      parameters:
+      - description: document ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/documents.Result'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+      summary: delete a document by id
+      tags:
+      - documents
     get:
       description: use the supplied id to lookup the document from the store
       parameters:
-      - description: Account ID
+      - description: document ID
         in: path
         name: id
         required: true

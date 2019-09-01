@@ -50,6 +50,14 @@ func (m *mockRepository) Search(s DocSearch, order []OrderBy) (PagedDocuments, e
 	return PagedDocuments{}, nil
 }
 
+func (m *mockRepository) Exists(id string, a persistence.Atomic) (err error) {
+	return nil
+}
+
+func (m *mockRepository) CreateAtomic() (persistence.Atomic, error) {
+	return persistence.Atomic{}, nil
+}
+
 func TestGetDocumentByID(t *testing.T) {
 	// Setup
 	e := echo.New()
@@ -57,8 +65,12 @@ func TestGetDocumentByID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	m := &mockRepository{}
-	h := NewHandler(m, nil, nil, nil)
+	mdr := &mockRepository{}
+	repos := Repositories{
+		DocRepo: mdr,
+	}
+
+	h := NewHandler(repos)
 	c.SetParamNames("id")
 	c.SetParamValues("id")
 
@@ -77,8 +89,11 @@ func TestGetDocumentByID(t *testing.T) {
 	// error
 	c = e.NewContext(req, rec)
 
-	m = &mockRepository{}
-	h = NewHandler(m, nil, nil, nil)
+	mdr = &mockRepository{}
+	repos = Repositories{
+		DocRepo: mdr,
+	}
+	h = NewHandler(repos)
 
 	err = h.GetDocumentByID(c)
 	if err == nil {

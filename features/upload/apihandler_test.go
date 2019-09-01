@@ -56,6 +56,10 @@ func (m mockRepository) Delete(id string, a persistence.Atomic) (err error) {
 	return nil
 }
 
+func (m mockRepository) CreateAtomic() (persistence.Atomic, error) {
+	return persistence.Atomic{}, nil
+}
+
 func setup(t *testing.T, config Config, formfield, file string) (echo.Context, *Handler, *httptest.ResponseRecorder) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)

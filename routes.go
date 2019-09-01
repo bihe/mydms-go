@@ -80,8 +80,14 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 
 	// documents
 	d := api.Group("/documents")
-	dh := documents.NewHandler(dr, tr, sr, ur)
+	dh := documents.NewHandler(documents.Repositories{
+		DocRepo:    dr,
+		TagRepo:    tr,
+		SenderRepo: sr,
+		UploadRepo: ur,
+	})
 	d.GET("/:id", dh.GetDocumentByID)
+	d.DELETE("/:id", dh.DeleteDocumentByID)
 
 	return
 }
