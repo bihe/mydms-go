@@ -126,7 +126,8 @@ func (rw dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Documen
 	newEnty = true
 	if doc.ID != "" {
 		var find DocumentEntity
-		err = rw.c.Get(&find, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=?", doc.ID)
+		// use the database logic for row-locking to prevent issues concurrently updating entries
+		err = rw.c.Get(&find, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=? FOR UPDATE", doc.ID)
 		if err != nil {
 			log.Warnf("could not get a Document by ID '%s' - a new entry will be created", doc.ID)
 			newEnty = true
