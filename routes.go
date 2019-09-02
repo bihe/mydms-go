@@ -89,6 +89,7 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 	}, storeSvc)
 	d.GET("/:id", dh.GetDocumentByID)
 	d.DELETE("/:id", dh.DeleteDocumentByID)
+	d.GET("/search", dh.SearchDocuments)
 
 	return
 }

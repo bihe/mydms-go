@@ -3,7 +3,9 @@ package documents
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -30,6 +32,12 @@ type Document struct {
 	UploadToken string   `json:"uploadFileToken,omitempty"`
 	Tags        []string `json:"tags"`
 	Senders     []string `json:"senders"`
+}
+
+// PagedDcoument represents a paged result
+type PagedDcoument struct {
+	Documents    []Document `json:"documents"`
+	TotalEntries int        `json:"totalEntries"`
 }
 
 // ActionResult is a code specifying a specific outcome/result
@@ -103,43 +111,15 @@ func NewHandler(repos Repositories, fs filestore.FileService) *Handler {
 // @Router /api/v1/documents/{id} [get]
 func (h *Handler) GetDocumentByID(c echo.Context) error {
 	var (
-		d       DocumentEntity
-		err     error
-		tags    []string
-		senders []string
-		cre     string
-		mod     string
+		d   DocumentEntity
+		err error
 	)
 	id := c.Param("id")
 	if d, err = h.r.DocRepo.Get(id); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
-	// prepare some values for the API
-	p := d.PreviewLink
-	preview := ""
-	if p.Valid {
-		preview = p.String
-	}
-	tags = strings.Split(d.TagList, ";")
-	senders = strings.Split(d.SenderList, ";")
-	cre = d.Created.Format(jsonTimeLayout)
-	if d.Modified.Valid {
-		mod = d.Modified.Time.Format(jsonTimeLayout)
-	}
-	doc := Document{
-		ID:          d.ID,
-		Title:       d.Title,
-		AltID:       d.AltID,
-		Amount:      d.Amount,
-		Created:     cre,
-		Modified:    mod,
-		FileName:    d.FileName,
-		PreviewLink: preview,
-		Tags:        tags,
-		Senders:     senders,
-	}
-	return c.JSON(http.StatusOK, doc)
+	return c.JSON(http.StatusOK, convert(d))
 }
 
 // DeleteDocumentByID godoc
@@ -177,7 +157,6 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 		}
 	}()
 
-	// before we delete the entry, check if it is really available!
 	fileName, err := h.r.DocRepo.Exists(id, atomic)
 	if err != nil {
 		log.Warnf("the document '%s' is not available, %v", id, err)
@@ -192,6 +171,7 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 		return core.ServerError{Err: err, Request: c.Request()}
 	}
 
+	// also remove the file payload stored in the backend store
 	err = h.fs.DeleteFile(fileName)
 	if err != nil {
 		log.Errorf("could not delete file in backend store '%s', %v", fileName, err)
@@ -203,4 +183,110 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 		Message: fmt.Sprintf("Document with id '%s' was deleted.", id),
 		Result:  Deleted,
 	})
+}
+
+func (h *Handler) SearchDocuments(c echo.Context) (err error) {
+	var (
+		title     string
+		tag       string
+		sender    string
+		fromDate  string
+		untilDate string
+		limit     int
+		skip      int
+		order     []OrderBy
+	)
+
+	title = c.QueryParam("title")
+	tag = c.QueryParam("tag")
+	sender = c.QueryParam("sender")
+	fromDate = c.QueryParam("from")
+	untilDate = c.QueryParam("to")
+	limit = parseIntVal(c.QueryParam("limit"), 20)
+	limit = parseIntVal(c.QueryParam("skip"), 0)
+
+	docs, err := h.r.DocRepo.Search(DocSearch{
+		Title:  title,
+		Tag:    tag,
+		Sender: sender,
+		From:   parseDateTime(fromDate),
+		Until:  parseDateTime(untilDate),
+		Limit:  limit,
+		Skip:   skip,
+	}, order)
+
+	if err != nil {
+		log.Warnf("could not search for documents, %v", err)
+		err = fmt.Errorf("error searching documents, %v", err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	pDoc := PagedDcoument{
+		TotalEntries: docs.Count,
+		Documents:    convertList(docs.Documents),
+	}
+
+	return c.JSON(http.StatusOK, pDoc)
+}
+
+func convert(d DocumentEntity) Document {
+	var (
+		tags    []string
+		senders []string
+		cre     string
+		mod     string
+	)
+
+	p := d.PreviewLink
+	preview := ""
+	if p.Valid {
+		preview = p.String
+	}
+	tags = strings.Split(d.TagList, ";")
+	senders = strings.Split(d.SenderList, ";")
+	cre = d.Created.Format(jsonTimeLayout)
+	if d.Modified.Valid {
+		mod = d.Modified.Time.Format(jsonTimeLayout)
+	}
+	return Document{
+		ID:          d.ID,
+		Title:       d.Title,
+		AltID:       d.AltID,
+		Amount:      d.Amount,
+		Created:     cre,
+		Modified:    mod,
+		FileName:    d.FileName,
+		PreviewLink: preview,
+		Tags:        tags,
+		Senders:     senders,
+	}
+}
+
+func convertList(ds []DocumentEntity) []Document {
+	var (
+		doc  Document
+		docs []Document
+	)
+	for _, d := range ds {
+		doc = convert(d)
+		docs = append(docs, doc)
+	}
+	return docs
+}
+
+func parseIntVal(input string, def int) int {
+	v, err := strconv.Atoi(input)
+	if err != nil {
+		return def
+	}
+	return v
+}
+
+func parseDateTime(input string) time.Time {
+	const jsDateFormat = "2006-01-02T15:04:05+01:00"
+	t, err := time.Parse(jsDateFormat, input)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
 }
