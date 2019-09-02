@@ -90,6 +90,15 @@ definitions:
       uploadFileToken:
         type: string
     type: object
+  documents.PagedDcoument:
+    properties:
+      documents:
+        items:
+          $ref: '#/definitions/documents.Document'
+        type: array
+      totalEntries:
+        type: integer
+    type: object
   documents.Result:
     properties:
       message:
@@ -167,11 +176,6 @@ paths:
           schema:
             $ref: '#/definitions/documents.Result'
             type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/core.ProblemDetail'
-            type: object
         "401":
           description: Unauthorized
           schema:
@@ -179,11 +183,6 @@ paths:
             type: object
         "403":
           description: Forbidden
-          schema:
-            $ref: '#/definitions/core.ProblemDetail'
-            type: object
-        "404":
-          description: Not Found
           schema:
             $ref: '#/definitions/core.ProblemDetail'
             type: object
@@ -209,11 +208,6 @@ paths:
           schema:
             $ref: '#/definitions/documents.Document'
             type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/core.ProblemDetail'
-            type: object
         "401":
           description: Unauthorized
           schema:
@@ -235,6 +229,62 @@ paths:
             $ref: '#/definitions/core.ProblemDetail'
             type: object
       summary: get a document by id
+      tags:
+      - documents
+  /api/v1/documents/search:
+    get:
+      description: use filters to search for docments. the result is a paged set
+      parameters:
+      - description: title search
+        in: query
+        name: title
+        type: string
+      - description: tag search
+        in: query
+        name: tag
+        type: string
+      - description: sender search
+        in: query
+        name: sender
+        type: string
+      - description: start date
+        in: query
+        name: from
+        type: string
+      - description: end date
+        in: query
+        name: to
+        type: string
+      - description: limit max results
+        in: query
+        name: limit
+        type: integer
+      - description: skip N results
+        in: query
+        name: skip
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/documents.PagedDcoument'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+      summary: search for documents
       tags:
       - documents
   /api/v1/file:

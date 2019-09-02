@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -19,9 +20,11 @@ import (
 )
 
 const invalidJSON = "could not get valid json: %v"
+const errExp = "error expected"
 const ID = "id"
 const notExists = "!exists"
 const noDelete = "!delete"
+const noResult = "!result"
 const noFileDelete = "!fileDelete"
 
 /* MOCK
@@ -61,7 +64,33 @@ func (m *mockRepository) Delete(id string, a persistence.Atomic) (err error) {
 }
 
 func (m *mockRepository) Search(s DocSearch, order []OrderBy) (PagedDocuments, error) {
-	return PagedDocuments{}, nil
+	if s.Title == noResult {
+		return PagedDocuments{}, fmt.Errorf("search error")
+	}
+
+	return PagedDocuments{
+		Count: 2,
+		Documents: []DocumentEntity{
+			DocumentEntity{
+				Title:       "title1",
+				FileName:    "filename1",
+				Amount:      1,
+				TagList:     "taglist1",
+				SenderList:  "senderlist1",
+				PreviewLink: sql.NullString{String: "previewlink", Valid: true},
+				Created:     time.Now().UTC(),
+				Modified:    mysql.NullTime{Time: time.Now().UTC(), Valid: true},
+			},
+			DocumentEntity{
+				Title:      "title2",
+				FileName:   "filename2",
+				Amount:     2,
+				TagList:    "taglist2",
+				SenderList: "senderlist2",
+				Created:    time.Now().UTC(),
+			},
+		},
+	}, nil
 }
 
 func (m *mockRepository) Exists(id string, a persistence.Atomic) (filePath string, err error) {
@@ -168,7 +197,7 @@ func TestGetDocumentByID(t *testing.T) {
 
 	err = h.GetDocumentByID(c)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(errExp)
 	}
 }
 
@@ -217,7 +246,7 @@ func TestDeleteDocumentByID(t *testing.T) {
 	failH := NewHandler(faileRepo, svc)
 	err = failH.DeleteDocumentByID(c)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(errExp)
 	}
 
 	// error exists
@@ -229,7 +258,7 @@ func TestDeleteDocumentByID(t *testing.T) {
 	c.SetParamValues(notExists)
 	err = h.DeleteDocumentByID(c)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(errExp)
 	}
 
 	// error delete
@@ -241,7 +270,7 @@ func TestDeleteDocumentByID(t *testing.T) {
 	c.SetParamValues(noDelete)
 	err = h.DeleteDocumentByID(c)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(errExp)
 	}
 
 	// error no file delete
@@ -253,11 +282,54 @@ func TestDeleteDocumentByID(t *testing.T) {
 	c.SetParamValues(noFileDelete)
 	err = h.DeleteDocumentByID(c)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(errExp)
 	}
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf(expectations, err)
 	}
+}
+
+func TestSearchDocuments(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	q := make(url.Values)
+	q.Set("skip", "0")
+	q.Set("limit", "20")
+	q.Set("from", time.Now().Format(time.RFC3339))
+
+	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	mdr := &mockRepository{}
+	svc := &mockFileService{}
+
+	repos := Repositories{
+		DocRepo: mdr,
+	}
+	h := NewHandler(repos, svc)
+
+	// success
+	err := h.SearchDocuments(c)
+	if err != nil {
+		t.Errorf("cannot search for documents: %v", err)
+	}
+
+	// error
+	q = make(url.Values)
+	q.Set("skip", "-")
+	q.Set("limit", "-")
+	q.Set("title", noResult)
+
+	req = httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	err = h.SearchDocuments(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
 }

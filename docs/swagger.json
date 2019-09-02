@@ -48,6 +48,89 @@
                 }
             }
         },
+        "/api/v1/documents/search": {
+            "get": {
+                "description": "use filters to search for docments. the result is a paged set",
+                "tags": [
+                    "documents"
+                ],
+                "summary": "search for documents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "title search",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "tag search",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sender search",
+                        "name": "sender",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start date",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end date",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit max results",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "skip N results",
+                        "name": "skip",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/documents.PagedDcoument"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/core.ProblemDetail"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{id}": {
             "get": {
                 "description": "use the supplied id to lookup the document from the store",
@@ -70,13 +153,6 @@
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/documents.Document"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/core.ProblemDetail"
                         }
                     },
                     "401": {
@@ -132,13 +208,6 @@
                             "$ref": "#/definitions/documents.Result"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/core.ProblemDetail"
-                        }
-                    },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
@@ -148,13 +217,6 @@
                     },
                     "403": {
                         "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/core.ProblemDetail"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/core.ProblemDetail"
@@ -601,6 +663,20 @@
                 },
                 "uploadFileToken": {
                     "type": "string"
+                }
+            }
+        },
+        "documents.PagedDcoument": {
+            "type": "object",
+            "properties": {
+                "documents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/documents.Document"
+                    }
+                },
+                "totalEntries": {
+                    "type": "integer"
                 }
             }
         },

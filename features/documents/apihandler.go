@@ -105,7 +105,6 @@ func NewHandler(repos Repositories, fs filestore.FileService) *Handler {
 // @Success 200 {object} documents.Document
 // @Failure 401 {object} core.ProblemDetail
 // @Failure 403 {object} core.ProblemDetail
-// @Failure 400 {object} core.ProblemDetail
 // @Failure 404 {object} core.ProblemDetail
 // @Failure 500 {object} core.ProblemDetail
 // @Router /api/v1/documents/{id} [get]
@@ -130,8 +129,6 @@ func (h *Handler) GetDocumentByID(c echo.Context) error {
 // @Success 200 {object} documents.Result
 // @Failure 401 {object} core.ProblemDetail
 // @Failure 403 {object} core.ProblemDetail
-// @Failure 400 {object} core.ProblemDetail
-// @Failure 404 {object} core.ProblemDetail
 // @Failure 500 {object} core.ProblemDetail
 // @Router /api/v1/documents/{id} [delete]
 func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
@@ -185,6 +182,22 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 	})
 }
 
+// SearchDocuments godoc
+// @Summary search for documents
+// @Description use filters to search for docments. the result is a paged set
+// @Tags documents
+// @Param title query string false "title search"
+// @Param tag query string false "tag search"
+// @Param sender query string false "sender search"
+// @Param from query string false "start date"
+// @Param to query string false "end date"
+// @Param limit query int false "limit max results"
+// @Param skip query int false "skip N results"
+// @Success 200 {object} documents.PagedDcoument
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 500 {object} core.ProblemDetail
+// @Router /api/v1/documents/search [get]
 func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 	var (
 		title     string
@@ -202,8 +215,12 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 	sender = c.QueryParam("sender")
 	fromDate = c.QueryParam("from")
 	untilDate = c.QueryParam("to")
+
+	// defaults
 	limit = parseIntVal(c.QueryParam("limit"), 20)
-	limit = parseIntVal(c.QueryParam("skip"), 0)
+	skip = parseIntVal(c.QueryParam("skip"), 0)
+	orderByTitle := OrderBy{Field: "title", Order: ASC}
+	orderByCreated := OrderBy{Field: "created", Order: DESC}
 
 	docs, err := h.r.DocRepo.Search(DocSearch{
 		Title:  title,
@@ -213,7 +230,7 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 		Until:  parseDateTime(untilDate),
 		Limit:  limit,
 		Skip:   skip,
-	}, order)
+	}, append(order, orderByCreated, orderByTitle))
 
 	if err != nil {
 		log.Warnf("could not search for documents, %v", err)
