@@ -14,6 +14,7 @@ import (
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
+	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
 )
 
@@ -143,15 +144,7 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 
 	// complete the atomic method
 	defer func() {
-		switch err {
-		case nil:
-			err = atomic.Commit()
-		default:
-			log.Errorf("could not complete the transaction: %v", err)
-			if e := atomic.Rollback(); e != nil {
-				err = fmt.Errorf("%v; could not rollback transaction: %v", err, e)
-			}
-		}
+		err = persistence.HandleTX(true, &atomic, err)
 	}()
 
 	fileName, err := h.r.DocRepo.Exists(id, atomic)

@@ -33,11 +33,11 @@ func NewRepository(c persistence.Connection) (Repository, error) {
 	if !c.Active {
 		return nil, fmt.Errorf("no repository connection available")
 	}
-	return dbRepository{c}, nil
+	return &dbRepository{c}, nil
 }
 
 // GetAllTags returns all available tags in alphabetical order
-func (r dbRepository) GetAllTags() ([]TagEntity, error) {
+func (r *dbRepository) GetAllTags() ([]TagEntity, error) {
 	var tags []TagEntity
 	if err := r.c.Select(&tags, "SELECT t.id, t.name FROM TAGS t ORDER BY name ASC"); err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (r dbRepository) GetAllTags() ([]TagEntity, error) {
 
 // SearchTags returns tags matching the given search string
 // the search string is matched independent of case and works in a wildcard fashion
-func (r dbRepository) SearchTags(s string) ([]TagEntity, error) {
+func (r *dbRepository) SearchTags(s string) ([]TagEntity, error) {
 	var tags []TagEntity
 	search := strings.ToLower(s)
 	search = "%" + search + "%"
@@ -59,7 +59,7 @@ func (r dbRepository) SearchTags(s string) ([]TagEntity, error) {
 
 // SaveTags takes a slice of strings and saves tag entries if they do not exist
 // the existance-check is done by comparing the tag-name
-func (r dbRepository) SaveTags(tags []string, a persistence.Atomic) (err error) {
+func (r *dbRepository) SaveTags(tags []string, a persistence.Atomic) (err error) {
 	var atomic *persistence.Atomic
 
 	defer func() {

@@ -32,16 +32,16 @@ func NewRepository(c persistence.Connection) (Repository, error) {
 	if !c.Active {
 		return nil, fmt.Errorf("no repository connection available")
 	}
-	return dbRepository{c}, nil
+	return &dbRepository{c}, nil
 }
 
 // CreateAtomic returns a new atomic object
-func (rw dbRepository) CreateAtomic() (persistence.Atomic, error) {
+func (rw *dbRepository) CreateAtomic() (persistence.Atomic, error) {
 	return rw.c.CreateAtomic()
 }
 
 // Write saves an upload item
-func (rw dbRepository) Write(item Upload, a persistence.Atomic) (err error) {
+func (rw *dbRepository) Write(item Upload, a persistence.Atomic) (err error) {
 	var atomic *persistence.Atomic
 
 	defer func() {
@@ -61,7 +61,7 @@ func (rw dbRepository) Write(item Upload, a persistence.Atomic) (err error) {
 }
 
 // Read gets an item by it's ID
-func (rw dbRepository) Read(id string) (Upload, error) {
+func (rw *dbRepository) Read(id string) (Upload, error) {
 	u := Upload{}
 
 	err := rw.c.Get(&u, "SELECT id, filename, mimetype, created FROM UPLOADS WHERE id=?", id)
@@ -72,7 +72,7 @@ func (rw dbRepository) Read(id string) (Upload, error) {
 }
 
 // Delete removes the item with the specified id from the store
-func (rw dbRepository) Delete(id string, a persistence.Atomic) (err error) {
+func (rw *dbRepository) Delete(id string, a persistence.Atomic) (err error) {
 	var atomic *persistence.Atomic
 
 	defer func() {

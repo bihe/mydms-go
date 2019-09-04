@@ -33,11 +33,11 @@ func NewRepository(c persistence.Connection) (Repository, error) {
 	if !c.Active {
 		return nil, fmt.Errorf("no repository connection available")
 	}
-	return dbRepository{c}, nil
+	return &dbRepository{c}, nil
 }
 
 // GetAllSenders returns all available senders in alphabetical order
-func (r dbRepository) GetAllSenders() ([]SenderEntity, error) {
+func (r *dbRepository) GetAllSenders() ([]SenderEntity, error) {
 	var senders []SenderEntity
 	if err := r.c.Select(&senders, "SELECT t.id, t.name FROM SENDERS t ORDER BY name ASC"); err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (r dbRepository) GetAllSenders() ([]SenderEntity, error) {
 
 // SearchSenders returns senders matching the given search string
 // the search string is matched independent of case and works in a wildcard fashion
-func (r dbRepository) SearchSenders(s string) ([]SenderEntity, error) {
+func (r *dbRepository) SearchSenders(s string) ([]SenderEntity, error) {
 	var senders []SenderEntity
 	search := strings.ToLower(s)
 	search = "%" + search + "%"
@@ -59,7 +59,7 @@ func (r dbRepository) SearchSenders(s string) ([]SenderEntity, error) {
 
 // SaveSenders takes a slice of strings and saves sender entries if they do not exist
 // the existance-check is done by comparing the sender-name
-func (r dbRepository) SaveSenders(senders []string, a persistence.Atomic) (err error) {
+func (r *dbRepository) SaveSenders(senders []string, a persistence.Atomic) (err error) {
 	var atomic *persistence.Atomic
 
 	defer func() {

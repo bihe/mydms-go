@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
@@ -24,7 +23,7 @@ type DocumentEntity struct {
 	PreviewLink sql.NullString `db:"previewlink"`
 	Amount      float32        `db:"amount"`
 	Created     time.Time      `db:"created"`
-	Modified    mysql.NullTime `db:"modified"` // go1.13 https://tip.golang.org/pkg/database/sql/#NullTime
+	Modified    sql.NullTime   `db:"modified"`
 	TagList     string         `db:"taglist"`
 	SenderList  string         `db:"senderlist"`
 }
@@ -90,7 +89,7 @@ func NewRepository(c persistence.Connection) (Repository, error) {
 	if !c.Active {
 		return nil, fmt.Errorf("no repository connection available")
 	}
-	return dbRepository{c}, nil
+	return &dbRepository{c}, nil
 }
 
 type dbRepository struct {
@@ -98,14 +97,14 @@ type dbRepository struct {
 }
 
 // CreateAtomic returns a new atomic object
-func (rw dbRepository) CreateAtomic() (persistence.Atomic, error) {
+func (rw *dbRepository) CreateAtomic() (persistence.Atomic, error) {
 	return rw.c.CreateAtomic()
 }
 
 // Save a document entry. Either create or update the entry, based on availability
 // if a valid/active atomic object is supplied the transaction handling is done by the caller
 // otherwise a new transaction is created for the scope of the method
-func (rw dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
+func (rw *dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
 	var (
 		atomic  *persistence.Atomic
 		newEnty bool
@@ -143,7 +142,7 @@ func (rw dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Documen
 		doc.AltID = randomString(8)
 		r, err = atomic.NamedExec("INSERT INTO DOCUMENTS (id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created) VALUES (:id,:title,:filename,:alternativeid,:previewlink,:amount,:taglist,:senderlist,:created)", &doc)
 	} else {
-		m := mysql.NullTime{Time: time.Now().UTC(), Valid: true}
+		m := sql.NullTime{Time: time.Now().UTC(), Valid: true}
 		doc.Modified = m
 		r, err = atomic.NamedExec("UPDATE DOCUMENTS SET title=:title,filename=:filename,alternativeid=:alternativeid,previewlink=:previewlink,amount=:amount,taglist=:taglist,senderlist=:senderlist,modified=:modified WHERE id=:id", &doc)
 	}
@@ -166,7 +165,7 @@ func (rw dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Documen
 }
 
 // Get retuns a document by the given id
-func (rw dbRepository) Get(id string) (d DocumentEntity, err error) {
+func (rw *dbRepository) Get(id string) (d DocumentEntity, err error) {
 	err = rw.c.Get(&d, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=?", id)
 	if err != nil {
 		err = fmt.Errorf("cannot get document by id '%s': %v", id, err)
@@ -176,7 +175,7 @@ func (rw dbRepository) Get(id string) (d DocumentEntity, err error) {
 }
 
 // Exists checks if a given id is available
-func (rw dbRepository) Exists(id string, a persistence.Atomic) (filePath string, err error) {
+func (rw *dbRepository) Exists(id string, a persistence.Atomic) (filePath string, err error) {
 	var (
 		atomic *persistence.Atomic
 	)
@@ -200,7 +199,7 @@ func (rw dbRepository) Exists(id string, a persistence.Atomic) (filePath string,
 }
 
 // Delete a document by its id
-func (rw dbRepository) Delete(id string, a persistence.Atomic) (err error) {
+func (rw *dbRepository) Delete(id string, a persistence.Atomic) (err error) {
 	var (
 		atomic *persistence.Atomic
 	)
@@ -222,7 +221,7 @@ func (rw dbRepository) Delete(id string, a persistence.Atomic) (err error) {
 
 // Search for documents based on the supplied search-object 'DocSearch'
 // the slice of order-bys is used to defined the query sort-order
-func (rw dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, err error) {
+func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, err error) {
 	var query string
 	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
 	qc := "SELECT count(id) FROM DOCUMENTS"

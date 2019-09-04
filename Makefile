@@ -16,6 +16,9 @@ release:
 test:
 	@-$(MAKE) -s go-test
 
+clean-test:
+	@-$(MAKE) -s go-clean-test
+
 coverage:
 	@-$(MAKE) -s go-test-coverage
 
@@ -37,6 +40,10 @@ go-run:
 go-test:
 	@echo "  >  Go test ..."
 	go test -race ./...
+
+go-clean-test:
+	@echo "  >  Go test (no cache)..."
+	go test -race -count=1 ./...
 
 go-test-coverage:
 	@echo "  >  Go test coverage ..."

@@ -8,7 +8,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bihe/mydms/persistence"
-	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -240,7 +239,7 @@ func TestRead(t *testing.T) {
 		PreviewLink: sql.NullString{String: "previewlink", Valid: true},
 		Amount:      1.0,
 		Created:     time.Now().UTC(),
-		Modified:    mysql.NullTime{},
+		Modified:    sql.NullTime{},
 		TagList:     "tags",
 		SenderList:  "senders",
 	}
@@ -425,7 +424,7 @@ func TestSearch(t *testing.T) {
 		PreviewLink: sql.NullString{String: "previewlink", Valid: true},
 		Amount:      1.0,
 		Created:     time.Now().UTC(),
-		Modified:    mysql.NullTime{},
+		Modified:    sql.NullTime{},
 		TagList:     "tags",
 		SenderList:  "senders",
 	}

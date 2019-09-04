@@ -13,7 +13,6 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/persistence"
-	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +46,7 @@ func (m *mockRepository) Get(id string) (d DocumentEntity, err error) {
 		return DocumentEntity{}, fmt.Errorf("no document")
 	}
 	return DocumentEntity{
-		Modified:    mysql.NullTime{Time: time.Now().UTC(), Valid: true},
+		Modified:    sql.NullTime{Time: time.Now().UTC(), Valid: true},
 		PreviewLink: sql.NullString{String: "string", Valid: true},
 	}, nil
 }
@@ -79,7 +78,7 @@ func (m *mockRepository) Search(s DocSearch, order []OrderBy) (PagedDocuments, e
 				SenderList:  "senderlist1",
 				PreviewLink: sql.NullString{String: "previewlink", Valid: true},
 				Created:     time.Now().UTC(),
-				Modified:    mysql.NullTime{Time: time.Now().UTC(), Valid: true},
+				Modified:    sql.NullTime{Time: time.Now().UTC(), Valid: true},
 			},
 			DocumentEntity{
 				Title:      "title2",
@@ -316,6 +315,14 @@ func TestSearchDocuments(t *testing.T) {
 	err := h.SearchDocuments(c)
 	if err != nil {
 		t.Errorf("cannot search for documents: %v", err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		var pd PagedDcoument
+		err = json.Unmarshal(rec.Body.Bytes(), &pd)
+		if err != nil {
+			t.Errorf("could not unmarshal json: %v", err)
+		}
+		assert.Equal(t, 2, pd.TotalEntries)
+		assert.Equal(t, 2, len(pd.Documents))
 	}
 
 	// error
@@ -331,5 +338,4 @@ func TestSearchDocuments(t *testing.T) {
 	if err == nil {
 		t.Errorf(errExp)
 	}
-
 }
