@@ -13,7 +13,16 @@ variables:
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
   GO111MODULE: 'on'
 
+
+
 steps:
+
+# Go tool installer
+# Find in cache or download a specific version of Go and add it to the PATH
+- task: GoTool@0
+  inputs:
+    version: '1.13'
+
 - script: |
     mkdir -p '$(GOBIN)'
     mkdir -p '$(GOPATH)/pkg'
