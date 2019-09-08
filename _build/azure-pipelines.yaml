@@ -13,8 +13,6 @@ variables:
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
   GO111MODULE: 'on'
 
-
-
 steps:
 
 # Go tool installer
