@@ -109,7 +109,7 @@ func TestActionResults(t *testing.T) {
 
 	err = aa.UnmarshalJSON([]byte("__Deleted\""))
 	if err == nil {
-		t.Errorf(expected)
+		t.Errorf(expectedErr)
 	}
 }
 

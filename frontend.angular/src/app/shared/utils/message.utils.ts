@@ -17,13 +17,13 @@ export class MessageUtils {
 
     public showMessage(snackBar: MatSnackBar, message, type: string, duration: number, closeMessage: string) {
         if (duration > 0) {
-            const snackBarRef = snackBar.open(message, closeMessage,
+            snackBar.open(message, closeMessage,
                 {
                   duration: duration,
                   panelClass: [type]
                 });
         } else {
-            const snackBarRef = snackBar.open(message, closeMessage,
+            snackBar.open(message, closeMessage,
                 {
                   panelClass: [type]
                 });

@@ -17,9 +17,10 @@ const fatalErr = "an error '%s' was not expected when opening a stub database co
 const expectations = "there were unfulfilled expectations: %s"
 const deleteExpErr = "error was not expected while delete item: %v"
 const existsErr = "error was not expected while checking for existence of item: %v"
-const expected = "error expected"
+const expectedErr = "error expected"
 
 const stmtInsertDocs = "INSERT INTO DOCUMENTS"
+const queryDocs = "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
 
 var Err = fmt.Errorf("error")
 
@@ -115,7 +116,7 @@ func TestSave(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}).
 		AddRow(item.ID, item.Title, item.FileName, item.AltID, item.PreviewLink, item.Amount, item.TagList, item.SenderList, d.Created, nil)
-	mock.ExpectQuery("SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS").WillReturnRows(rows)
+	mock.ExpectQuery(queryDocs).WillReturnRows(rows)
 	mock.ExpectExec("UPDATE DOCUMENTS").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -138,7 +139,7 @@ func TestSave(t *testing.T) {
 	item.ID = uuid.New().String()
 	item.AltID = d.AltID
 
-	mock.ExpectQuery("SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS").WillReturnError(fmt.Errorf("no rows"))
+	mock.ExpectQuery(queryDocs).WillReturnError(fmt.Errorf("no rows"))
 	mock.ExpectExec(stmtInsertDocs).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -195,13 +196,15 @@ func TestSaveError(t *testing.T) {
 		SenderList: "senderlist",
 	}
 
+	var errInsert = "error was expected while insert item"
+
 	// INSERT Error
 	mock.ExpectBegin()
 	mock.ExpectExec(stmtInsertDocs).WillReturnError(fmt.Errorf("does not work"))
 	mock.ExpectRollback()
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
-		t.Errorf("error was expected while insert item")
+		t.Errorf(errInsert)
 	}
 
 	// Rows affected Error
@@ -210,7 +213,7 @@ func TestSaveError(t *testing.T) {
 	mock.ExpectRollback()
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
-		t.Errorf("error was expected while insert item")
+		t.Errorf(errInsert)
 	}
 
 	// Rows affected number mismatch
@@ -219,7 +222,7 @@ func TestSaveError(t *testing.T) {
 	mock.ExpectRollback()
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
-		t.Errorf("error was expected while insert item")
+		t.Errorf(errInsert)
 	}
 }
 
@@ -237,12 +240,17 @@ func TestSaveReferences(t *testing.T) {
 	docID := "document1"
 	errInsert := "error was not expected while inserting item: %v"
 
+	stmtDeleteTags := "DELETE FROM DOCUMENTS_TO_TAGS"
+	stmtDeleteSenders := "DELETE FROM DOCUMENTS_TO_SENDERS"
+	stmtInsertTags := "INSERT INTO DOCUMENTS_TO_TAGS"
+	stmtInsertSenders := "INSERT INTO DOCUMENTS_TO_SENDERS"
+
 	// straight success
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertSenders).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
 	if err != nil {
@@ -251,52 +259,52 @@ func TestSaveReferences(t *testing.T) {
 
 	// delete1
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnError(Err)
+	mock.ExpectExec(stmtDeleteTags).WillReturnError(Err)
 	mock.ExpectRollback()
 	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
 	if err == nil {
-		t.Errorf(expected)
+		t.Errorf(expectedErr)
 	}
 
 	// delete2
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnError(Err)
+	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteSenders).WillReturnError(Err)
 	mock.ExpectRollback()
 	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
 	if err == nil {
-		t.Errorf(expected)
+		t.Errorf(expectedErr)
 	}
 
 	// insert1
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnError(Err)
+	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertTags).WillReturnError(Err)
 	mock.ExpectRollback()
 	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
 	if err == nil {
-		t.Errorf(expected)
+		t.Errorf(expectedErr)
 	}
 
 	// insert2
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_SENDERS").WillReturnError(Err)
+	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertSenders).WillReturnError(Err)
 	mock.ExpectRollback()
 	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
 	if err == nil {
-		t.Errorf(expected)
+		t.Errorf(expectedErr)
 	}
 
 	// externally supplied tx
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertTags).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertSenders).WillReturnResult(sqlmock.NewResult(1, 1))
 	a, _ := c.CreateAtomic()
 	err = rw.SaveReferences(docID, []int{1}, []int{1}, a)
 	if err != nil {
@@ -320,7 +328,7 @@ func TestRead(t *testing.T) {
 	c := persistence.NewFromDB(dbx)
 	rw := dbRepository{c}
 	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
-	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
+	q := queryDocs
 	id := "id"
 
 	expected := DocumentEntity{
@@ -455,7 +463,7 @@ func TestExists(t *testing.T) {
 	mock.ExpectRollback()
 
 	if _, err = rw.Exists(id, persistence.Atomic{}); err == nil {
-		t.Errorf(expected)
+		t.Errorf(expectedErr)
 	}
 
 	// we make sure that all expectations were met
@@ -505,7 +513,6 @@ func TestSearch(t *testing.T) {
 	rw := dbRepository{c}
 	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
 
-	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
 	qc := "SELECT count\\(id\\) FROM DOCUMENTS"
 
 	expected := DocumentEntity{
@@ -527,7 +534,7 @@ func TestSearch(t *testing.T) {
 
 	dr := sqlmock.NewRows(columns).
 		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified)
-	mock.ExpectQuery(q).WillReturnRows(dr)
+	mock.ExpectQuery(queryDocs).WillReturnRows(dr)
 
 	ts := time.Now().UTC()
 	from := ts.Add(-time.Hour)
@@ -571,16 +578,16 @@ func TestSearch(t *testing.T) {
 	mock.ExpectQuery(qc).WillReturnError(fmt.Errorf("could not get count"))
 	_, err = rw.Search(search, order)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(expectedErr)
 	}
 
 	// failure2
 	cr = sqlmock.NewRows([]string{"count(id)"}).AddRow(1)
 	mock.ExpectQuery(qc).WillReturnRows(cr)
-	mock.ExpectQuery(q).WillReturnError(fmt.Errorf("could not get documents"))
+	mock.ExpectQuery(queryDocs).WillReturnError(fmt.Errorf("could not get documents"))
 	_, err = rw.Search(search, order)
 	if err == nil {
-		t.Errorf("error expected")
+		t.Errorf(expectedErr)
 	}
 
 	// we make sure that all expectations were met
