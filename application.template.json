@@ -30,6 +30,8 @@
         "logLevel": "info"
     },
     "fileServer": {
-	    "path": "ui"
+	    "url": "ui",
+        "path": "./ui",
+        "spaIndexFile": "index.html"
     }
 }

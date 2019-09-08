@@ -46,7 +46,9 @@ type LogConfig struct {
 
 // FileServer defines the settings for serving static files
 type FileServer struct {
-	Path string `json:"path"`
+	URL          string `json:"url"`
+	Path         string `json:"path"`
+	SpaIndexFile string `json:"spaIndexFile"`
 }
 
 // UploadConfig defines relevant values for the upload logic

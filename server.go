@@ -111,12 +111,12 @@ func setupAPIServer() (*echo.Echo, string) {
 		RedirectURL:   c.Sec.LoginRedirect,
 		CacheDuration: c.Sec.CacheDuration,
 	}))
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   c.FS.Path,
-		Browse: false,
-		Index:  "index.html",
-		HTML5:  true,
+	e.Use(core.SpaWithConfig(core.SpaConfig{
+		Paths:             []string{"/" + c.FS.URL},
+		FilePath:          c.FS.Path + "/" + c.FS.SpaIndexFile,
+		RedirectEmptyPath: true,
 	}))
+	e.Static(c.FS.URL, c.FS.Path)
 
 	// persistence store && application version
 	con := persistence.NewConn(c.DB.ConnStr)
