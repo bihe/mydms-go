@@ -54,5 +54,4 @@ steps:
   displayName: 'Build Docker image: mydms'
   inputs:
     command: build
-    Dockerfile: Dockerfile
 
