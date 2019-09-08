@@ -57,7 +57,7 @@ steps:
     command: build
     tags: mydms
     arguments: |
-      buildtime_variable_version=$(buildtime_variable_version)
-      buildtime_variable_timestamp=$(buildtime_variable_timestamp)
-      buildtime_varialbe_commit=$(buildtime_varialbe_commit)
+      --build-arg buildtime_variable_version=$(buildtime_variable_version)
+      --build-arg buildtime_variable_timestamp=$(buildtime_variable_timestamp)
+      --build-arg buildtime_varialbe_commit=$(buildtime_varialbe_commit)
 
