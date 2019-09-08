@@ -12,6 +12,7 @@ variables:
   GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
   GO111MODULE: 'on'
+  DOCKER_BUILDKIT: 1
 
 steps:
 
@@ -54,4 +55,9 @@ steps:
   displayName: 'Build Docker image: mydms'
   inputs:
     command: build
+    tags: mydms
+    arguments: |
+      buildtime_variable_version=$(buildtime_variable_version)
+      buildtime_variable_timestamp=$(buildtime_variable_timestamp)
+      buildtime_varialbe_commit=$(buildtime_varialbe_commit)
 
