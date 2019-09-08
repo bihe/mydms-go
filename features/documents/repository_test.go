@@ -19,6 +19,10 @@ const deleteExpErr = "error was not expected while delete item: %v"
 const existsErr = "error was not expected while checking for existence of item: %v"
 const expected = "error expected"
 
+const stmtInsertDocs = "INSERT INTO DOCUMENTS"
+
+var Err = fmt.Errorf("error")
+
 func TestAtomic(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -85,14 +89,16 @@ func TestSave(t *testing.T) {
 		SenderList: "senderlist",
 	}
 
+	errInsert := "error was not expected while inserting item: %v"
+
 	// INSERT
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO DOCUMENTS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertDocs).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	var d DocumentEntity
 	if d, err = rw.Save(item, persistence.Atomic{}); err != nil {
-		t.Errorf("error was not expected while insert item: %v", err)
+		t.Errorf(errInsert, err)
 	}
 	assert.Equal(t, item.Title, d.Title)
 	assert.Equal(t, item.FileName, d.FileName)
@@ -115,7 +121,7 @@ func TestSave(t *testing.T) {
 
 	var up DocumentEntity
 	if up, err = rw.Save(item, persistence.Atomic{}); err != nil {
-		t.Errorf("error was not expected while insert item: %v", err)
+		t.Errorf(errInsert, err)
 	}
 	assert.Equal(t, item.ID, up.ID)
 	assert.Equal(t, item.AltID, up.AltID)
@@ -133,11 +139,11 @@ func TestSave(t *testing.T) {
 	item.AltID = d.AltID
 
 	mock.ExpectQuery("SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS").WillReturnError(fmt.Errorf("no rows"))
-	mock.ExpectExec("INSERT INTO DOCUMENTS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertDocs).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	if up, err = rw.Save(item, persistence.Atomic{}); err != nil {
-		t.Errorf("error was not expected while insert item: %v", err)
+		t.Errorf(errInsert, err)
 	}
 
 	assert.NotEqual(t, item.AltID, up.AltID)
@@ -151,10 +157,10 @@ func TestSave(t *testing.T) {
 	// externally supplied tx
 	item.ID = ""
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO DOCUMENTS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(stmtInsertDocs).WillReturnResult(sqlmock.NewResult(1, 1))
 	a, _ := c.CreateAtomic()
 	if d, err = rw.Save(item, a); err != nil {
-		t.Errorf("error was not expected while insert item: %v", err)
+		t.Errorf(errInsert, err)
 	}
 	assert.Equal(t, item.Title, d.Title)
 	assert.Equal(t, item.FileName, d.FileName)
@@ -191,7 +197,7 @@ func TestSaveError(t *testing.T) {
 
 	// INSERT Error
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO DOCUMENTS").WillReturnError(fmt.Errorf("does not work"))
+	mock.ExpectExec(stmtInsertDocs).WillReturnError(fmt.Errorf("does not work"))
 	mock.ExpectRollback()
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
@@ -200,7 +206,7 @@ func TestSaveError(t *testing.T) {
 
 	// Rows affected Error
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO DOCUMENTS").WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("result error")))
+	mock.ExpectExec(stmtInsertDocs).WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("result error")))
 	mock.ExpectRollback()
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
@@ -209,11 +215,97 @@ func TestSaveError(t *testing.T) {
 
 	// Rows affected number mismatch
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO DOCUMENTS").WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec(stmtInsertDocs).WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectRollback()
 
 	if _, err = rw.Save(item, persistence.Atomic{}); err == nil {
 		t.Errorf("error was expected while insert item")
+	}
+}
+
+func TestSaveReferences(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbRepository{c}
+
+	docID := "document1"
+	errInsert := "error was not expected while inserting item: %v"
+
+	// straight success
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
+	if err != nil {
+		t.Errorf(errInsert, err)
+	}
+
+	// delete1
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnError(Err)
+	mock.ExpectRollback()
+	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
+	if err == nil {
+		t.Errorf(expected)
+	}
+
+	// delete2
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnError(Err)
+	mock.ExpectRollback()
+	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
+	if err == nil {
+		t.Errorf(expected)
+	}
+
+	// insert1
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnError(Err)
+	mock.ExpectRollback()
+	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
+	if err == nil {
+		t.Errorf(expected)
+	}
+
+	// insert2
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_SENDERS").WillReturnError(Err)
+	mock.ExpectRollback()
+	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
+	if err == nil {
+		t.Errorf(expected)
+	}
+
+	// externally supplied tx
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_TAGS").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO DOCUMENTS_TO_SENDERS").WillReturnResult(sqlmock.NewResult(1, 1))
+	a, _ := c.CreateAtomic()
+	err = rw.SaveReferences(docID, []int{1}, []int{1}, a)
+	if err != nil {
+		t.Errorf(errInsert, err)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
 	}
 }
 

@@ -1,0 +1,51 @@
+.document__icon {
+    top: 10px;
+    position: relative;
+}
+
+.save {
+    background-color: #239B56;
+    color: white;
+}
+
+.delete {
+    background-color: #CB4335;
+    color: white;
+}
+
+div.tags {
+    margin-top: 10px;
+}
+
+.tag {
+    background-color: green;
+    color: white;
+}
+
+.is-drop-over {
+    font-style: italic;
+    background-color: #78909C;
+    border-style: dashed;
+    border-width: 1px;
+}
+
+.upload__zone {
+    text-align: center;
+}
+
+.upload__zone_dd_text {
+    font-style: italic;
+    font-size: 1.2em;
+}
+
+.upload__file {
+    padding-top: 20px;  
+}
+
+.drop-container {
+    padding: 10px;
+}
+
+[hidden] {
+    display: none;
+  }

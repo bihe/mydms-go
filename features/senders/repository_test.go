@@ -15,6 +15,7 @@ const expectations = "there were unfulfilled expectations: %s"
 const errExpected = "error during SQL expected"
 
 var errNoRows = fmt.Errorf("no rows")
+var rowDef = []string{"id", "name"}
 
 func TestNewRepository(t *testing.T) {
 	_, err := NewRepository(persistence.Connection{})
@@ -42,31 +43,33 @@ func TestGetAllEntitySenders(t *testing.T) {
 	}
 	defer db.Close()
 
+	var errCould = "could not get all senders: %v"
+
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	r := dbRepository{c}
 	q := "SELECT t.id, t.name FROM SENDERS t ORDER BY name ASC"
 
 	// success
-	rows := sqlmock.NewRows([]string{"id", "name"}).
+	rows := sqlmock.NewRows(rowDef).
 		AddRow(1, "Sender1").
 		AddRow(2, "Sender2")
 	mock.ExpectQuery(q).WillReturnRows(rows)
 
 	senders, err := r.GetAllSenders()
 	if err != nil {
-		t.Errorf("could not get all senders: %v", err)
+		t.Errorf(errCould, err)
 	}
 	if len(senders) != 2 {
 		t.Errorf("expected 2 items, got %d", len(senders))
 	}
 
 	// no results
-	rows = sqlmock.NewRows([]string{"id", "name"})
+	rows = sqlmock.NewRows(rowDef)
 	mock.ExpectQuery(q).WillReturnRows(rows)
 	senders, err = r.GetAllSenders()
 	if err != nil {
-		t.Errorf("could not get all senders: %v", err)
+		t.Errorf(errCould, err)
 	}
 	if len(senders) != 0 {
 		t.Errorf("expected 0 items, got %d", len(senders))
@@ -92,6 +95,8 @@ func TestSearchForEntitySenders(t *testing.T) {
 	}
 	defer db.Close()
 
+	var errCouldSearch = "could not search for senders by '%s': %v"
+
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	r := dbRepository{c}
@@ -99,12 +104,12 @@ func TestSearchForEntitySenders(t *testing.T) {
 
 	// excact match
 	search := "Sender1"
-	rows := sqlmock.NewRows([]string{"id", "name"}).
+	rows := sqlmock.NewRows(rowDef).
 		AddRow(1, search)
 	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
 	senders, err := r.SearchSenders(search)
 	if err != nil {
-		t.Errorf("could not search for senders by '%s': %v", search, err)
+		t.Errorf(errCouldSearch, search, err)
 	}
 	if len(senders) != 1 {
 		t.Errorf("expected 1 items, got %d", len(senders))
@@ -112,20 +117,40 @@ func TestSearchForEntitySenders(t *testing.T) {
 
 	// no match
 	search = "_no_sender_"
-	rows = sqlmock.NewRows([]string{"id", "name"})
+	rows = sqlmock.NewRows(rowDef)
 	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnRows(rows)
 	senders, err = r.SearchSenders(search)
 	if err != nil {
-		t.Errorf("could not search for senders by '%s': %v", search, err)
+		t.Errorf(errCouldSearch, search, err)
 	}
 	if len(senders) != 0 {
 		t.Errorf("expected 0 items, got %d", len(senders))
+	}
+
+	// single search
+	rows = sqlmock.NewRows(rowDef).
+		AddRow(1, search)
+	mock.ExpectQuery(q).WithArgs(strings.ToLower(search)).WillReturnRows(rows)
+	sender, err := r.GetSenderByName(search)
+	if err != nil {
+		t.Errorf(errCouldSearch, search, err)
+	}
+	if sender.Name != search {
+		t.Errorf("could not get single result for search '%s'", search)
 	}
 
 	// error
 	search = "foo"
 	mock.ExpectQuery(q).WithArgs("%" + strings.ToLower(search) + "%").WillReturnError(errNoRows)
 	senders, err = r.SearchSenders(search)
+	if err == nil {
+		t.Errorf(errExpected)
+	}
+
+	// single-search error
+	search = "foo"
+	mock.ExpectQuery(q).WithArgs(strings.ToLower(search)).WillReturnError(errNoRows)
+	sender, err = r.GetSenderByName(search)
 	if err == nil {
 		t.Errorf(errExpected)
 	}
@@ -182,6 +207,82 @@ func TestSaveTags(t *testing.T) {
 	mock.ExpectRollback()
 
 	err = r.SaveSenders(senders, persistence.Atomic{})
+	if err == nil {
+		t.Errorf(errExpected)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func TestCreateSender(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	r := dbRepository{c}
+
+	q := "SELECT id,name FROM SENDERS"
+	stmt := "INSERT INTO SENDERS \\(name\\)"
+	senderName := "Sender1"
+
+	errSave := "could not save sender: %v"
+	errID := "the ID of the created sender is 0"
+	Err := fmt.Errorf("error")
+
+	// Existing Sender
+	mock.ExpectBegin()
+	rows := sqlmock.NewRows(rowDef).
+		AddRow(1, senderName)
+	mock.ExpectQuery(q).WillReturnRows(rows)
+	mock.ExpectCommit()
+
+	tag, err := r.CreateSender(senderName, persistence.Atomic{})
+	if err != nil {
+		t.Errorf(errSave, err)
+	}
+	if tag.ID == 0 {
+		t.Errorf(errID)
+	}
+
+	// New Sender
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WillReturnError(errNoRows)
+	mock.ExpectExec(stmt).WithArgs(senderName).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	tag, err = r.CreateSender(senderName, persistence.Atomic{})
+	if err != nil {
+		t.Errorf(errSave, err)
+	}
+	if tag.ID == 0 {
+		t.Errorf(errID)
+	}
+
+	// error1
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WillReturnError(errNoRows)
+	mock.ExpectExec(stmt).WithArgs(senderName).WillReturnError(Err)
+	mock.ExpectRollback()
+
+	tag, err = r.CreateSender(senderName, persistence.Atomic{})
+	if err == nil {
+		t.Errorf(errExpected)
+	}
+
+	// error2
+	mock.ExpectBegin()
+	mock.ExpectQuery(q).WillReturnError(errNoRows)
+	mock.ExpectExec(stmt).WithArgs(senderName).WillReturnResult(sqlmock.NewErrorResult(Err))
+	mock.ExpectRollback()
+
+	tag, err = r.CreateSender(senderName, persistence.Atomic{})
 	if err == nil {
 		t.Errorf(errExpected)
 	}

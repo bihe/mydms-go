@@ -11,7 +11,7 @@ import (
 
 // Tag is the json representation of the persistence entity
 type Tag struct {
-	ID   int64  `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 

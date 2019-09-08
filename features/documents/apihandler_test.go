@@ -1,17 +1,20 @@
 package documents
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/bihe/mydms/features/filestore"
+	"github.com/bihe/mydms/features/upload"
 	"github.com/bihe/mydms/persistence"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -19,6 +22,8 @@ import (
 )
 
 const invalidJSON = "could not get valid json: %v"
+const couldNotSave = "could not save documents: %v"
+const errorUnmarshal = "could not unmarshal json: %v"
 const errExp = "error expected"
 const ID = "id"
 const notExists = "!exists"
@@ -26,96 +31,7 @@ const noDelete = "!delete"
 const noResult = "!result"
 const noFileDelete = "!fileDelete"
 
-/* MOCK
-type Repository interface {
-	Get(id string) (d DocumentEntity, err error)
-	Exists(id string, a persistence.Atomic) (filePath string, err error)
-	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
-	Delete(id string, a persistence.Atomic) (err error)
-	Search(s DocSearch, order []OrderBy) (PagedDocuments, error)
-}
-*/
-
-type mockRepository struct {
-	c    persistence.Connection
-	fail bool
-}
-
-func (m *mockRepository) Get(id string) (d DocumentEntity, err error) {
-	if id == "" {
-		return DocumentEntity{}, fmt.Errorf("no document")
-	}
-	return DocumentEntity{
-		Modified:    sql.NullTime{Time: time.Now().UTC(), Valid: true},
-		PreviewLink: sql.NullString{String: "string", Valid: true},
-	}, nil
-}
-
-func (m *mockRepository) Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error) {
-	return doc, nil
-}
-
-func (m *mockRepository) Delete(id string, a persistence.Atomic) (err error) {
-	if id == noDelete {
-		return fmt.Errorf("delete error")
-	}
-	return nil
-}
-
-func (m *mockRepository) Search(s DocSearch, order []OrderBy) (PagedDocuments, error) {
-	if s.Title == noResult {
-		return PagedDocuments{}, fmt.Errorf("search error")
-	}
-
-	return PagedDocuments{
-		Count: 2,
-		Documents: []DocumentEntity{
-			DocumentEntity{
-				Title:       "title1",
-				FileName:    "filename1",
-				Amount:      1,
-				TagList:     "taglist1",
-				SenderList:  "senderlist1",
-				PreviewLink: sql.NullString{String: "previewlink", Valid: true},
-				Created:     time.Now().UTC(),
-				Modified:    sql.NullTime{Time: time.Now().UTC(), Valid: true},
-			},
-			DocumentEntity{
-				Title:      "title2",
-				FileName:   "filename2",
-				Amount:     2,
-				TagList:    "taglist2",
-				SenderList: "senderlist2",
-				Created:    time.Now().UTC(),
-			},
-		},
-	}, nil
-}
-
-func (m *mockRepository) Exists(id string, a persistence.Atomic) (filePath string, err error) {
-	if id == notExists {
-		return "", fmt.Errorf("exists error")
-	}
-	if id == noFileDelete {
-		return noFileDelete, nil
-	}
-	return "file", nil
-}
-
-func (m *mockRepository) CreateAtomic() (persistence.Atomic, error) {
-	if m.fail {
-		return persistence.Atomic{}, fmt.Errorf("start transaction failed")
-	}
-	return m.c.CreateAtomic()
-}
-
-/* MOCK
-type FileService interface {
-	SaveFile(file FileItem) error
-	GetFile(filePath string) (FileItem, error)
-	DeleteFile(filePath string) error
-}
-*/
+var errRaise = fmt.Errorf("error")
 
 // rather small PDF payload
 // https://stackoverflow.com/questions/17279712/what-is-the-smallest-possible-valid-pdf
@@ -133,26 +49,68 @@ startxref
 %EOF
 `
 
-type mockFileService struct{}
-
-func (m *mockFileService) SaveFile(file filestore.FileItem) error {
-	return nil
+var uploadConfig = upload.Config{
+	AllowedFileTypes: []string{"png", "pdf"},
+	MaxUploadSize:    1,
+	UploadPath:       "/tmp/",
 }
 
-func (m *mockFileService) GetFile(filePath string) (filestore.FileItem, error) {
-	return filestore.FileItem{
-		FileName:   "test.pdf",
-		FolderName: "PATH",
-		MimeType:   "application/pdf",
-		Payload:    []byte(pdfPayload),
-	}, nil
-}
-
-func (m *mockFileService) DeleteFile(filePath string) error {
-	if filePath == noFileDelete {
-		return fmt.Errorf("no file delete")
+func TestActionResults(t *testing.T) {
+	if None.mapToString() != "None" {
+		t.Errorf("None != None")
 	}
-	return nil
+	if Created.mapToString() != "Created" {
+		t.Errorf("Created != Created")
+	}
+	if Updated.mapToString() != "Updated" {
+		t.Errorf("Updated != Updated")
+	}
+	if Deleted.mapToString() != "Deleted" {
+		t.Errorf("Deleted != Deleted")
+	}
+	var a ActionResult
+	a = Error
+	if a.mapToString() != "Error" {
+		t.Errorf("Error != Error")
+	}
+
+	if a.mapToAction("None") != None {
+		t.Errorf("None != None")
+	}
+	if a.mapToAction("Created") != Created {
+		t.Errorf("Created != Created")
+	}
+	if a.mapToAction("Updated") != Updated {
+		t.Errorf("Updated != Updated")
+	}
+	if a.mapToAction("Deleted") != Deleted {
+		t.Errorf("Deleted != Deleted")
+	}
+	if a.mapToAction("Error") != Error {
+		t.Errorf("Error != Error")
+	}
+
+	a = Created
+	b, err := a.MarshalJSON()
+	if err != nil {
+		t.Errorf("could not marshall json: %v", err)
+	}
+	if string(b) != "\"Created\"" {
+		t.Errorf("wrong json marshalling")
+	}
+	aa := new(ActionResult)
+	err = aa.UnmarshalJSON([]byte("\"Deleted\""))
+	if err != nil {
+		t.Errorf("cannot unmarshall: %v", err)
+	}
+	if *aa != Deleted {
+		t.Errorf("wrong json unmarshalling")
+	}
+
+	err = aa.UnmarshalJSON([]byte("__Deleted\""))
+	if err == nil {
+		t.Errorf(expected)
+	}
 }
 
 func TestGetDocumentByID(t *testing.T) {
@@ -169,7 +127,7 @@ func TestGetDocumentByID(t *testing.T) {
 		DocRepo: mdr,
 	}
 
-	h := NewHandler(repos, svc)
+	h := NewHandler(repos, svc, uploadConfig)
 	c.SetParamNames(ID)
 	c.SetParamValues(ID)
 
@@ -192,7 +150,7 @@ func TestGetDocumentByID(t *testing.T) {
 	repos = Repositories{
 		DocRepo: mdr,
 	}
-	h = NewHandler(repos, svc)
+	h = NewHandler(repos, svc, uploadConfig)
 
 	err = h.GetDocumentByID(c)
 	if err == nil {
@@ -216,14 +174,13 @@ func TestDeleteDocumentByID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	mdr := &mockRepository{con, false}
-	svc := &mockFileService{}
-
+	mdr := newDocRepo(con)
+	svc := newFileService()
 	repos := Repositories{
 		DocRepo: mdr,
 	}
 
-	h := NewHandler(repos, svc)
+	h := NewHandler(repos, svc, uploadConfig)
 	c.SetParamNames(ID)
 	c.SetParamValues(ID)
 
@@ -238,11 +195,12 @@ func TestDeleteDocumentByID(t *testing.T) {
 
 	// start transaction failes
 	c = e.NewContext(req, rec)
-	failmdr := &mockRepository{con, true}
+	failmdr := newDocRepo(con)
+	failmdr.fail = true
 	faileRepo := Repositories{
 		DocRepo: failmdr,
 	}
-	failH := NewHandler(faileRepo, svc)
+	failH := NewHandler(faileRepo, svc, uploadConfig)
 	err = failH.DeleteDocumentByID(c)
 	if err == nil {
 		t.Errorf(errExp)
@@ -275,6 +233,9 @@ func TestDeleteDocumentByID(t *testing.T) {
 	// error no file delete
 	mock.ExpectBegin()
 	mock.ExpectRollback()
+	svc.callCount = 0
+	svc.errMap[1] = errRaise
+	h = NewHandler(repos, svc, uploadConfig)
 
 	c = e.NewContext(req, rec)
 	c.SetParamNames(ID)
@@ -309,21 +270,21 @@ func TestSearchDocuments(t *testing.T) {
 	repos := Repositories{
 		DocRepo: mdr,
 	}
-	h := NewHandler(repos, svc)
+	h := NewHandler(repos, svc, uploadConfig)
 
 	// success
 	err := h.SearchDocuments(c)
 	if err != nil {
 		t.Errorf("cannot search for documents: %v", err)
-		assert.Equal(t, http.StatusOK, rec.Code)
-		var pd PagedDcoument
-		err = json.Unmarshal(rec.Body.Bytes(), &pd)
-		if err != nil {
-			t.Errorf("could not unmarshal json: %v", err)
-		}
-		assert.Equal(t, 2, pd.TotalEntries)
-		assert.Equal(t, 2, len(pd.Documents))
 	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	var pd PagedDcoument
+	err = json.Unmarshal(rec.Body.Bytes(), &pd)
+	if err != nil {
+		t.Errorf(errorUnmarshal, err)
+	}
+	assert.Equal(t, 2, pd.TotalEntries)
+	assert.Equal(t, 2, len(pd.Documents))
 
 	// error
 	q = make(url.Values)
@@ -338,4 +299,345 @@ func TestSearchDocuments(t *testing.T) {
 	if err == nil {
 		t.Errorf(errExp)
 	}
+}
+
+func TestSaveUpdateDocument(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	con := persistence.NewFromDB(dbx)
+
+	updateJSON := `{
+  "id":"f03756a1-59ad-426f-9e59-d1ee227edf0d",
+  "title":"Test",
+  "fileName":"/2019_09_07/test.pdf",
+  "alternativeId":"UP5XqwA3",
+  "previewLink":
+  "LzIwMTlfMDlfMDcvaW52b2ljZS5wZGY=",
+  "amount":116,
+  "created":"2019-09-07T11:26:56",
+  "modified":null,
+  "tags":["Tag1","Tag2"],
+  "senders":["Sender1"],
+  "uploadFileToken":"-"
+}`
+
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	docRepo := newDocRepo(con)
+	tagRepo := newTagRepo()
+	senderRepo := newSenderRepo()
+	uploadRepo := newUploadRepo()
+	svc := newFileService()
+	repos := Repositories{
+		DocRepo:    docRepo,
+		TagRepo:    tagRepo,
+		SenderRepo: senderRepo,
+		UploadRepo: uploadRepo,
+	}
+	h := NewHandler(repos, svc, uploadConfig)
+
+	// update success
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	err = h.SaveDocument(c)
+	if err != nil {
+		t.Errorf(couldNotSave, err)
+	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	var result Result
+	err = json.Unmarshal(rec.Body.Bytes(), &result)
+	if err != nil {
+		t.Errorf(errorUnmarshal, err)
+	}
+	assert.Equal(t, Updated, result.Result)
+
+	// error get document - create new
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	docRepo.callCount = 0
+	docRepo.errMap[2] = errRaise
+	h = NewHandler(repos, svc, uploadConfig)
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	err = h.SaveDocument(c)
+	if err != nil {
+		t.Errorf(couldNotSave, err)
+	}
+	delete(docRepo.errMap, 1)
+
+	// error save document
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	docRepo.callCount = 0
+	docRepo.errMap[3] = errRaise
+	h = NewHandler(repos, svc, uploadConfig)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error save references
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	docRepo.callCount = 0
+	delete(docRepo.errMap, 3)
+	docRepo.errMap[4] = errRaise
+	h = NewHandler(repos, svc, uploadConfig)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error processtags1
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	tagRepo.callCount = 0
+	tagRepo.errMap[1] = errRaise
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err != nil {
+		t.Errorf(couldNotSave, err)
+	}
+
+	// error processtags2
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	tagRepo.callCount = 0
+	tagRepo.errMap[1] = errRaise
+	tagRepo.errMap[2] = errRaise
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error bind
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	req = httptest.NewRequest(http.MethodPost, "/", nil)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func TestSaveNewDocument(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	con := persistence.NewFromDB(dbx)
+
+	initialJSON := `{
+  "title":"Test",
+  "fileName":"test.pdf",
+  "amount":116,
+  "created":"2019-09-07T11:26:56",
+  "modified":null,
+  "tags":["Tag1","Tag2"],
+  "senders":["Sender1","Sender2"],
+  "uploadFileToken":"ABC"
+}`
+	doError := fmt.Errorf("error")
+
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	docRepo := newDocRepo(con)
+	tagRepo := newTagRepo()
+	senderRepo := newSenderRepo()
+	uploadRepo := newUploadRepo()
+	svc := newFileService()
+	repos := Repositories{
+		DocRepo:    docRepo,
+		TagRepo:    tagRepo,
+		SenderRepo: senderRepo,
+		UploadRepo: uploadRepo,
+	}
+
+	// ------------------------------------------------------------------
+	// save a random file for the upload-logic!
+	tempPath := getTempPath()
+	uploadFile := "ABC.pdf"
+	uploadConfig.UploadPath = tempPath
+	uploadFile = filepath.Join(uploadConfig.UploadPath, uploadFile)
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	defer func() {
+		os.Remove(uploadFile)
+	}()
+	// ------------------------------------------------------------------
+
+	h := NewHandler(repos, svc, uploadConfig)
+
+	// insert success
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	err = h.SaveDocument(c)
+	if err != nil {
+		t.Errorf(couldNotSave, err)
+	}
+	assert.Equal(t, http.StatusCreated, rec.Code)
+	var result Result
+	err = json.Unmarshal(rec.Body.Bytes(), &result)
+	if err != nil {
+		t.Errorf(errorUnmarshal, err)
+	}
+	assert.Equal(t, Created, result.Result)
+
+	// error processsenders1
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	senderRepo.callCount = 0
+	senderRepo.errMap[1] = doError
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err != nil {
+		t.Errorf(couldNotSave, err)
+	}
+
+	// error processsenders2
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	senderRepo.callCount = 0
+	senderRepo.errMap[1] = doError
+	senderRepo.errMap[2] = doError
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error processUploadFile
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	uploadRepo.callCount = 0
+	uploadRepo.errMap[1] = doError
+	senderRepo.callCount = 0
+	delete(senderRepo.errMap, 1)
+	delete(senderRepo.errMap, 2)
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error uploadfile
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	uploadConfig.UploadPath = "--"
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error save backend
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	uploadConfig.UploadPath = tempPath
+	svc.callCount = 0
+	svc.errMap[1] = doError
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error uploadrepo delete - no rollback herer
+	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+	uploadConfig.UploadPath = tempPath
+	uploadRepo.callCount = 0
+	delete(uploadRepo.errMap, 1)
+	uploadRepo.errMap[2] = doError
+	h = NewHandler(repos, svc, uploadConfig)
+	err = h.SaveDocument(c)
+	if err != nil {
+		t.Errorf(couldNotSave, err)
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+}
+
+func getTempPath() string {
+	dir, _ := ioutil.TempDir("", "mydms")
+	return dir
 }

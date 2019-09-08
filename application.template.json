@@ -30,7 +30,6 @@
         "logLevel": "info"
     },
     "fileServer": {
-	    "path": "ui",
-	    "urlPath": "/ui"
+	    "path": "ui"
     }
 }

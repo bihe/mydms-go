@@ -60,11 +60,12 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 
 	// upload
 	u := api.Group("/upload")
-	uh := upload.NewHandler(ur, upload.Config{
+	uploadConfig := upload.Config{
 		AllowedFileTypes: config.UP.AllowedFileTypes,
 		MaxUploadSize:    config.UP.MaxUploadSize,
 		UploadPath:       config.UP.UploadPath,
-	})
+	}
+	uh := upload.NewHandler(ur, uploadConfig)
 	u.POST("/file", uh.UploadFile)
 
 	// file
@@ -86,10 +87,12 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Config
 		TagRepo:    tr,
 		SenderRepo: sr,
 		UploadRepo: ur,
-	}, storeSvc)
+	}, storeSvc, uploadConfig)
 	d.GET("/:id", dh.GetDocumentByID)
 	d.DELETE("/:id", dh.DeleteDocumentByID)
 	d.GET("/search", dh.SearchDocuments)
+	d.POST("", dh.SaveDocument)
+	d.POST("/", dh.SaveDocument)
 
 	return
 }

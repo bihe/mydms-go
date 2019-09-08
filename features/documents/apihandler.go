@@ -1,8 +1,15 @@
 package documents
 
 import (
+	"bytes"
+	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +26,10 @@ import (
 )
 
 const jsonTimeLayout = "2006-01-02T15:04:05+07:00"
+
+// --------------------------------------------------------------------------
+// JSON models
+// --------------------------------------------------------------------------
 
 // Document is the json representation of the persistence entity
 type Document struct {
@@ -57,10 +68,8 @@ const (
 	Error = 99
 )
 
-func (a ActionResult) String() string {
+func (a ActionResult) mapToString() string {
 	switch a {
-	case None:
-		return "None"
 	case Created:
 		return "Created"
 	case Updated:
@@ -70,7 +79,41 @@ func (a ActionResult) String() string {
 	case Error:
 		return "Error"
 	}
-	return ""
+	return "None"
+}
+
+func (a ActionResult) mapToAction(s string) ActionResult {
+	switch s {
+	case "Created":
+		return Created
+	case "Updated":
+		return Updated
+	case "Deleted":
+		return Deleted
+	case "Error":
+		return Error
+	}
+	return None
+}
+
+// MarshalJSON marshals the enum as a quoted json string
+func (a ActionResult) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(a.mapToString())
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (a *ActionResult) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*a = a.mapToAction(j)
+	return nil
 }
 
 // Result is a generic result object
@@ -79,10 +122,19 @@ type Result struct {
 	Result  ActionResult `json:"result"`
 }
 
+// --------------------------------------------------------------------------
+// Handler definition
+// --------------------------------------------------------------------------
+
 // Handler provides handler methods for documents
 type Handler struct {
-	r  Repositories
-	fs filestore.FileService
+	docRepo    Repository
+	tagRepo    tags.Repository
+	senderRepo senders.Repository
+	uploadRepo upload.Repository
+	r          Repositories
+	fs         filestore.FileService
+	uc         upload.Config
 }
 
 // Repositories combines necessary repositories for the document handler
@@ -94,8 +146,14 @@ type Repositories struct {
 }
 
 // NewHandler returns a pointer to a new handler instance
-func NewHandler(repos Repositories, fs filestore.FileService) *Handler {
-	return &Handler{r: repos, fs: fs}
+func NewHandler(repos Repositories, fs filestore.FileService, config upload.Config) *Handler {
+	return &Handler{
+		docRepo:    repos.DocRepo,
+		tagRepo:    repos.TagRepo,
+		senderRepo: repos.SenderRepo,
+		uploadRepo: repos.UploadRepo,
+		fs:         fs,
+		uc:         config}
 }
 
 // GetDocumentByID godoc
@@ -115,7 +173,7 @@ func (h *Handler) GetDocumentByID(c echo.Context) error {
 		err error
 	)
 	id := c.Param("id")
-	if d, err = h.r.DocRepo.Get(id); err != nil {
+	if d, err = h.docRepo.Get(id); err != nil {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
@@ -135,11 +193,9 @@ func (h *Handler) GetDocumentByID(c echo.Context) error {
 func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 	id := c.Param("id")
 
-	atomic, err := h.r.DocRepo.CreateAtomic()
+	atomic, err := h.startAtomic(c)
 	if err != nil {
-		log.Errorf("failed to start transaction: %v", err)
-		err = fmt.Errorf("could not start atomic operation: %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return
 	}
 
 	// complete the atomic method
@@ -147,14 +203,14 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 		err = persistence.HandleTX(true, &atomic, err)
 	}()
 
-	fileName, err := h.r.DocRepo.Exists(id, atomic)
+	fileName, err := h.docRepo.Exists(id, atomic)
 	if err != nil {
 		log.Warnf("the document '%s' is not available, %v", id, err)
 		err = fmt.Errorf("document '%s' not available", id)
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
-	err = h.r.DocRepo.Delete(id, atomic)
+	err = h.docRepo.Delete(id, atomic)
 	if err != nil {
 		log.Warnf("error during delete operation of '%s', %v", id, err)
 		err = fmt.Errorf("could not delete '%s', %v", id, err)
@@ -215,7 +271,7 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 	orderByTitle := OrderBy{Field: "title", Order: ASC}
 	orderByCreated := OrderBy{Field: "created", Order: DESC}
 
-	docs, err := h.r.DocRepo.Search(DocSearch{
+	docs, err := h.docRepo.Search(DocSearch{
 		Title:  title,
 		Tag:    tag,
 		Sender: sender,
@@ -237,6 +293,235 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 	}
 
 	return c.JSON(http.StatusOK, pDoc)
+}
+
+// SaveDocument godoc
+// @Summary save a document
+// @Description use the supplied document payload and store the data
+// @Tags documents
+// @Accept  json
+// @Produce  json
+// @Param document body documents.Document true "document payload"
+// @Success 200 {object} documents.Result
+// @Failure 401 {object} core.ProblemDetail
+// @Failure 403 {object} core.ProblemDetail
+// @Failure 500 {object} core.ProblemDetail
+// @Router /api/v1/documents [post]
+func (h *Handler) SaveDocument(c echo.Context) (err error) {
+	atomic, err := h.startAtomic(c)
+	if err != nil {
+		return
+	}
+
+	// complete the atomic method
+	defer func() {
+		err = persistence.HandleTX(true, &atomic, err)
+	}()
+
+	d := new(Document)
+	if err = c.Bind(d); err != nil {
+		log.Warnf("could not bind supplied payload, %v", err)
+		err = fmt.Errorf("could not bind supplied data: %v", err)
+		return core.BadRequestError{Err: err, Request: c.Request()}
+	}
+
+	d.FileName, err = h.procssUploadFile(d.UploadToken, d.FileName, atomic)
+	if err != nil {
+		log.Warnf("could not process the uploaded file, %v", err)
+		err = fmt.Errorf("upload-file error: %v", err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	tagIds, tagList, err := h.processTags(d.Tags, atomic)
+	if err != nil {
+		log.Warnf("could not process the supplied tags, %v", err)
+		err = fmt.Errorf("tag error: %v", err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	senderIds, senderList, err := h.processSenders(d.Senders, atomic)
+	if err != nil {
+		log.Warnf("could not process the supplied senders, %v", err)
+		err = fmt.Errorf("senders error: %v", err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	var doc DocumentEntity
+	newDoc := true
+	if d.ID == "" {
+		doc = initDocument(d, senderList, tagList)
+	} else {
+		// supplied ID needs to be checked if exists
+		doc, err = h.docRepo.Get(d.ID)
+		if err != nil {
+			log.Warnf("cannot find document by ID '%s' - create a new entry, %v", d.ID, err)
+			doc = initDocument(d, senderList, tagList)
+		} else {
+			newDoc = false
+			log.Infof("will update existing document ID '%s'", d.ID)
+			doc.Title = d.Title
+			doc.FileName = d.FileName
+			doc.PreviewLink = sql.NullString{String: base64.StdEncoding.EncodeToString([]byte(d.FileName)), Valid: true}
+			doc.Amount = d.Amount
+			doc.SenderList = senderList
+			doc.TagList = tagList
+		}
+	}
+
+	doc, err = h.docRepo.Save(doc, atomic)
+	if err != nil {
+		log.Errorf("could not save document: %v", err)
+		err = fmt.Errorf("error while saving document: %v", err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	err = h.docRepo.SaveReferences(doc.ID, tagIds, senderIds, atomic)
+	if err != nil {
+		log.Errorf("failed to save tags/senders references: %v", err)
+		err = fmt.Errorf("error while saving references: %v", err)
+		return core.ServerError{Err: err, Request: c.Request()}
+	}
+
+	var r Result
+	var code int
+	if newDoc {
+		r = Result{
+			Message: fmt.Sprintf("Created new document '%s' (%s)", doc.Title, doc.ID),
+			Result:  Created,
+		}
+		code = http.StatusCreated
+	} else {
+		r = Result{
+			Message: fmt.Sprintf("Updated existing document '%s' (%s)", doc.Title, doc.ID),
+			Result:  Updated,
+		}
+		code = http.StatusOK
+	}
+	c.JSON(code, r)
+	return
+}
+
+// --------------------------------------------------------------------------
+// helpers and internal functions
+// --------------------------------------------------------------------------
+
+func (h *Handler) procssUploadFile(token, fileName string, atomic persistence.Atomic) (string, error) {
+	if token == "" || token == "-" {
+		return fileName, nil
+	}
+
+	u, err := h.uploadRepo.Read(token)
+	if err != nil {
+		log.Errorf("could not read upload-file for token '%s', %v", token, err)
+		return "", fmt.Errorf("upload token error: %v", err)
+	}
+
+	log.Infof("use uploaded file identified by token '%s'", token)
+
+	now := time.Now().UTC()
+	folder := now.Format("2006_01_02")
+
+	ext := filepath.Ext(fileName)
+	uploadFile := filepath.Join(h.uc.UploadPath, token+ext)
+	payload, err := ioutil.ReadFile(uploadFile)
+	if err != nil {
+		log.Errorf("could not read upload file '%s', %v", uploadFile, err)
+		return "", fmt.Errorf("error reading upload-file: %v", err)
+	}
+
+	log.Debugf("got upload file '%s' with payload size '%d'!", uploadFile, len(payload))
+
+	item := filestore.FileItem{
+		FileName:   fileName,
+		FolderName: folder,
+		MimeType:   u.MimeType,
+		Payload:    payload,
+	}
+	err = h.fs.SaveFile(item)
+	if err != nil {
+		log.Errorf("could not save file '%s', %v", uploadFile, err)
+		return "", fmt.Errorf("error while saving file: %v", err)
+	}
+
+	err = os.Remove(uploadFile)
+	if err != nil {
+		// this error is ignored, does not invalidate the overall operation
+		log.Warnf("could not delete upload-file '%s', %v", uploadFile, err)
+	}
+	err = h.uploadRepo.Delete(token, atomic)
+	if err != nil {
+		// this error is ignored, does not invalidate the overall operation
+		log.Errorf("could not delete the upload-item by id '%s', %v", token, err)
+	}
+
+	return fmt.Sprintf("/%s/%s", folder, fileName), nil
+}
+
+func (h *Handler) processTags(tList []string, atomic persistence.Atomic) ([]int, string, error) {
+	var tagList []int
+	var stringList string
+	for _, t := range tList {
+		if stringList != "" {
+			stringList += ";"
+		}
+		tag, err := h.tagRepo.GetTagByName(t)
+		if err != nil {
+			log.Warnf("could not find tag '%s', %v", t, err)
+			if tag, err = h.tagRepo.CreateTag(t, atomic); err != nil {
+				return nil, "", err
+			}
+			tagList = append(tagList, tag.ID)
+			stringList += t
+		} else {
+			tagList = append(tagList, tag.ID)
+			stringList += tag.Name
+		}
+	}
+	return tagList, stringList, nil
+}
+
+func (h *Handler) processSenders(sList []string, atomic persistence.Atomic) ([]int, string, error) {
+	var senderList []int
+	var stringList string
+	for _, s := range sList {
+		if stringList != "" {
+			stringList += ";"
+		}
+		sender, err := h.senderRepo.GetSenderByName(s)
+		if err != nil {
+			log.Warnf("could not find sender '%s', %v", s, err)
+			if sender, err = h.senderRepo.CreateSender(s, atomic); err != nil {
+				return nil, "", err
+			}
+			senderList = append(senderList, sender.ID)
+			stringList += s
+		} else {
+			senderList = append(senderList, sender.ID)
+			stringList += sender.Name
+		}
+	}
+	return senderList, stringList, nil
+}
+
+func (h *Handler) startAtomic(c echo.Context) (persistence.Atomic, error) {
+	atomic, err := h.docRepo.CreateAtomic()
+	if err != nil {
+		log.Errorf("failed to start transaction: %v", err)
+		err = fmt.Errorf("could not start atomic operation: %v", err)
+		return persistence.Atomic{}, core.ServerError{Err: err, Request: c.Request()}
+	}
+	return atomic, nil
+}
+
+func initDocument(d *Document, sList, tList string) DocumentEntity {
+	return DocumentEntity{
+		Title:       d.Title,
+		FileName:    d.FileName,
+		PreviewLink: sql.NullString{String: base64.StdEncoding.EncodeToString([]byte(d.FileName)), Valid: true},
+		Amount:      d.Amount,
+		SenderList:  sList,
+		TagList:     tList,
+	}
 }
 
 func convert(d DocumentEntity) Document {
@@ -293,8 +578,7 @@ func parseIntVal(input string, def int) int {
 }
 
 func parseDateTime(input string) time.Time {
-	const jsDateFormat = "2006-01-02T15:04:05+01:00"
-	t, err := time.Parse(jsDateFormat, input)
+	t, err := time.Parse(jsonTimeLayout, input)
 	if err != nil {
 		return time.Time{}
 	}

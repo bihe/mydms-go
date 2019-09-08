@@ -65,6 +65,14 @@ func (m *mockRepository) SaveSenders(senders []string, a persistence.Atomic) (er
 	return nil
 }
 
+func (m *mockRepository) GetSenderByName(name string) (SenderEntity, error) {
+	return SenderEntity{}, nil
+}
+
+func (m *mockRepository) CreateSender(name string, a persistence.Atomic) (sender SenderEntity, err error) {
+	return SenderEntity{}, nil
+}
+
 func TestGetAllSenders(t *testing.T) {
 	// Setup
 	e := echo.New()

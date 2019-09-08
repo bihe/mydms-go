@@ -111,7 +111,12 @@ func setupAPIServer() (*echo.Echo, string) {
 		RedirectURL:   c.Sec.LoginRedirect,
 		CacheDuration: c.Sec.CacheDuration,
 	}))
-	e.Static(c.FS.URLPath, c.FS.Path)
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   c.FS.Path,
+		Browse: false,
+		Index:  "index.html",
+		HTML5:  true,
+	}))
 
 	// persistence store && application version
 	con := persistence.NewConn(c.DB.ConnStr)

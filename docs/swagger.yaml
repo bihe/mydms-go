@@ -161,6 +161,45 @@ paths:
       summary: provides information about the application
       tags:
       - appinfo
+  /api/v1/documents:
+    post:
+      consumes:
+      - application/json
+      description: use the supplied document payload and store the data
+      parameters:
+      - description: document payload
+        in: body
+        name: document
+        required: true
+        schema:
+          $ref: '#/definitions/documents.Document'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/documents.Result'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ProblemDetail'
+            type: object
+      summary: save a document
+      tags:
+      - documents
   /api/v1/documents/{id}:
     delete:
       description: use the supplied id to delete the document from the store

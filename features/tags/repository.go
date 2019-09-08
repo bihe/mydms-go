@@ -9,7 +9,7 @@ import (
 
 // TagEntity is used to categorize a document
 type TagEntity struct {
-	ID   int64  `db:"id"`
+	ID   int    `db:"id"`
 	Name string `db:"name"`
 }
 
@@ -21,6 +21,10 @@ type Repository interface {
 	SearchTags(s string) ([]TagEntity, error)
 	// SaveTags processes the list of tag-names and stores the entries if not available
 	SaveTags(tags []string, a persistence.Atomic) (err error)
+	// CreateTag creates a tag with the given name or returns an existing one
+	CreateTag(name string, a persistence.Atomic) (tag TagEntity, err error)
+	// GetTagByName returns the entity defined by the given name
+	GetTagByName(name string) (TagEntity, error)
 }
 
 type dbRepository struct {
@@ -51,10 +55,21 @@ func (r *dbRepository) SearchTags(s string) ([]TagEntity, error) {
 	var tags []TagEntity
 	search := strings.ToLower(s)
 	search = "%" + search + "%"
-	if err := r.c.Select(&tags, "SELECT t.id, t.name FROM TAGS t WHERE t.name LIKE ? ORDER BY name ASC", search); err != nil {
+	if err := r.c.Select(&tags, "SELECT t.id, t.name FROM TAGS t WHERE lower(t.name) LIKE ? ORDER BY name ASC", search); err != nil {
 		return nil, err
 	}
 	return tags, nil
+}
+
+// GetTagByName returns the tag by given name
+// the search is performed ignoring case sensitivity
+func (r *dbRepository) GetTagByName(name string) (TagEntity, error) {
+	var tag TagEntity
+	search := strings.ToLower(name)
+	if err := r.c.Get(&tag, "SELECT t.id, t.name FROM TAGS t WHERE lower(t.name) = ?", search); err != nil {
+		return TagEntity{}, err
+	}
+	return tag, nil
 }
 
 // SaveTags takes a slice of strings and saves tag entries if they do not exist
@@ -89,4 +104,34 @@ func (r *dbRepository) SaveTags(tags []string, a persistence.Atomic) (err error)
 		}
 	}
 	return
+}
+
+// CreateTag creates a tag with the given name or returns an existing one
+func (r *dbRepository) CreateTag(name string, a persistence.Atomic) (tag TagEntity, err error) {
+	var atomic *persistence.Atomic
+
+	defer func() {
+		err = persistence.HandleTX(!a.Active, atomic, err)
+	}()
+
+	if atomic, err = persistence.CheckTX(r.c, &a); err != nil {
+		return
+	}
+
+	err = atomic.Get(&tag, "SELECT id,name FROM TAGS t WHERE lower(t.name) = ?", strings.ToLower(name))
+	if err == nil {
+		return tag, nil
+	}
+
+	res, e := atomic.Exec("INSERT INTO TAGS (name) VALUES (?)", name)
+	if e != nil {
+		err = fmt.Errorf("cannot save tag item, %v", e)
+		return
+	}
+	id, e := res.LastInsertId()
+	if e != nil {
+		err = fmt.Errorf("could not get last inserted id, %v", e)
+		return
+	}
+	return TagEntity{ID: int(id), Name: name}, nil
 }

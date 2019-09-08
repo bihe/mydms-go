@@ -82,6 +82,7 @@ type Repository interface {
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
 	Delete(id string, a persistence.Atomic) (err error)
 	Search(s DocSearch, order []OrderBy) (PagedDocuments, error)
+	SaveReferences(docID string, tagIds, senderIds []int, a persistence.Atomic) (err error)
 }
 
 // NewRepository creates a new instance using an existing connection
@@ -295,6 +296,52 @@ func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, 
 		return
 	}
 	return PagedDocuments{Documents: docs, Count: c}, nil
+}
+
+// SaveReferences takes a list of tag-ids and sender-ids and stores the information
+// as references M:N within the database
+func (rw *dbRepository) SaveReferences(docID string, tagIds, senderIds []int, a persistence.Atomic) (err error) {
+	var (
+		atomic *persistence.Atomic
+	)
+
+	defer func() {
+		err = persistence.HandleTX(!a.Active, atomic, err)
+	}()
+
+	if atomic, err = persistence.CheckTX(rw.c, &a); err != nil {
+		return
+	}
+
+	// 1st clear old references
+	_, err = atomic.Exec("DELETE FROM DOCUMENTS_TO_TAGS WHERE document_id = ?", docID)
+	if err != nil {
+		err = fmt.Errorf("could not clear tag-references: %v", err)
+		return
+	}
+	_, err = atomic.Exec("DELETE FROM DOCUMENTS_TO_SENDERS WHERE document_id = ?", docID)
+	if err != nil {
+		err = fmt.Errorf("could not clear sender-references: %v", err)
+		return
+	}
+
+	// 2nd setup new references
+	for _, id := range tagIds {
+		_, err = atomic.Exec("INSERT INTO DOCUMENTS_TO_TAGS (document_id, tag_id) VALUES (?,?)", docID, id)
+		if err != nil {
+			err = fmt.Errorf("could not save tag-reference: %v", err)
+			return
+		}
+	}
+	for _, id := range senderIds {
+		_, err = atomic.Exec("INSERT INTO DOCUMENTS_TO_SENDERS (document_id, sender_id) VALUES (?,?)", docID, id)
+		if err != nil {
+			err = fmt.Errorf("could not save sender-reference: %v", err)
+			return
+		}
+	}
+
+	return
 }
 
 func prepareQuery(c persistence.Connection, q string, args map[string]interface{}) (string, []interface{}, error) {

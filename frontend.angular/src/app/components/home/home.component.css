@@ -1,0 +1,213 @@
+.document {
+    padding: 6px;
+    min-height: 250px;
+    min-width: 290px;
+    margin-bottom: 15px;
+    text-align: left;
+    display: inline-block;
+
+}
+
+.documents {
+    text-align: center;
+}
+
+/**
+ * CARD layout
+ * @see https://github.com/triceam/cards-ui/blob/master/assets/css/styles.css
+ */
+
+.card {
+    background: #fff;
+    border-radius: 2px;
+    display: inline-block;
+    height: 250px;
+    margin: 1rem;
+    position: relative;
+    width: 280px;
+    overflow:hidden;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+}
+
+.card:hover {
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    cursor: pointer;
+}
+
+.card .rightInfo {
+    position: absolute;
+    bottom: 5px;
+    right: 5px
+}
+
+.card .leftInfo {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    padding: 10px;
+}
+
+.card .infoElement {
+    position: relative;
+}
+
+.card .date {
+  color: #2471A3;
+  font-weight: bold;
+}
+
+.card h1 {
+    margin:0px;
+    padding:10px;
+    padding-bottom:0px;
+}
+
+.card h2 {
+    margin:0px;
+    padding:5px;
+    padding-bottom:0px;
+}
+
+.card h3 {
+    margin-top:0px;
+    padding:5px;
+    padding-bottom:0px;
+}
+
+.card h4 {
+    margin-top:0px;
+    padding:5px;
+    padding-bottom:0px;
+}
+
+.card p {
+    margin:0px;
+    padding:10px;
+}
+
+.card .cardheader {
+  text-align: left;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+  color: white;
+  background-color: #1B4F72;
+}
+
+.card .topic {
+  font-size: 1.5em;
+  font-weight:bold;
+}
+
+.selection-deliminator {
+  width:100%;
+  display:block
+}
+
+.selection-heading {
+  width:100%;
+  display:block
+}
+
+.selection-heading h3 {
+  color: #ECF0F1;
+}
+
+
+
+.card .corner-ribbon{
+  width: 200px;
+  background: #28B463;
+  position: absolute;
+  top: 25px;
+  left: -50px;
+  text-align: center;
+  line-height: 30px;
+  letter-spacing: 1px;
+  color: #f0f0f0;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+
+.card .corner-ribbon.bottom-right{
+  top: auto;
+  right: -60px;
+  bottom: 20px;
+  left: auto;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+
+.select:hover {
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+
+
+.add {
+    
+    cursor: pointer;
+    position: fixed;
+    bottom: 50px;
+    right: 30px;
+    
+}
+
+@media (max-width: 600px) {
+  .select {
+
+    bottom: 50px;
+
+  }
+}
+
+.masterdata {
+    position: fixed;
+    bottom: 130px;
+    right: 30px;
+}
+
+.masterdata     .mat-fab.mat-accent, .mat-mini-fab.mat-accent, .mat-raised-button.mat-accent {
+    background-color: #81D4FA;
+}
+
+.senders {
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.tags {
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.senders .mat-chip:not(.mat-basic-chip) {
+    background-color: #E64A19;
+    color: white;
+}
+
+.tags .mat-chip:not(.mat-basic-chip) {
+    background-color: #F1C40F  ;
+    color: rgba(0,0,0,.87);
+}
+
+.download {
+    top: 7px;
+    position: absolute;
+    right: 10px;
+    color: #AED6F1;
+}
+
+.more__results {
+    background-color: #FF9800;
+}
+
+.clear__search {
+    background-color: #6C3483;
+    color: white;
+}

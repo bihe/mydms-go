@@ -11,7 +11,7 @@ import (
 
 // Sender is the json representation of the persistence entity
 type Sender struct {
-	ID   int64  `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 

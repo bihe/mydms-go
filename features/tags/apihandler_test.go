@@ -65,6 +65,14 @@ func (m *mockTagRepo) SaveTags(tags []string, a persistence.Atomic) (err error) 
 	return nil
 }
 
+func (m *mockTagRepo) GetTagByName(name string) (TagEntity, error) {
+	return TagEntity{}, nil
+}
+
+func (m *mockTagRepo) CreateTag(name string, a persistence.Atomic) (tag TagEntity, err error) {
+	return TagEntity{}, nil
+}
+
 func TestGetAllTags(t *testing.T) {
 	// Setup
 	e := echo.New()
