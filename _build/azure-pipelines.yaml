@@ -49,3 +49,10 @@ steps:
   workingDirectory: '$(modulePath)'
   continueOnError: true
   displayName: 'Build App: mydms-go'
+
+- task: Docker@2
+  displayName: 'Build Docker image: mydms'
+  inputs:
+    command: build
+    Dockerfile: Dockerfile
+
