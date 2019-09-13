@@ -61,7 +61,7 @@ steps:
   displayName: 'Build Docker image: mydms'
   inputs:
     command: build
-    Dockerfile: ./Dockerfile
+    Dockerfile: '$(modulePath)/Dockerfile'
     repository: bihe/mydms-go
     tags: mydms
     arguments: |
