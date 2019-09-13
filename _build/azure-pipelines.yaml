@@ -61,6 +61,7 @@ steps:
   displayName: 'Build Docker image: mydms'
   inputs:
     command: build
+    Dockerfile: ./Dockerfile
     repository: bihe/mydms-go
     tags: mydms
     arguments: |
@@ -73,5 +74,8 @@ steps:
   inputs:
     command: push
     repository: bihe/mydms-go
-    tags: mydms
+    tags: |
+      mydms
+      latest
+      $(buildtime_variable_version)-$(buildtime_variable_timestamp)
 
