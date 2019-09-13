@@ -52,9 +52,16 @@ steps:
   displayName: 'Build App: mydms-go'
 
 - task: Docker@2
+  displayName: Login to Docker Hub
+  inputs:
+    command: login
+    containerRegistry: dockerhub
+
+- task: Docker@2
   displayName: 'Build Docker image: mydms'
   inputs:
-    command: build
+    command: buildAndPush
+    repository: bihe/mydms-go
     tags: mydms
     arguments: |
       --build-arg buildtime_variable_version=$(buildtime_variable_version)
