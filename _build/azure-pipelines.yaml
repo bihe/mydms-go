@@ -68,7 +68,7 @@ steps:
       $(buildtime_varialbe_commit)
     arguments: |
       --build-arg buildtime_variable_version=$(buildtime_variable_version)
-      --build-arg buildtime_variable_timestamp=$(buildtime_variable_timestamp)
+      --build-arg buildtime_variable_timestamp=$(Date:yyyyMMdd)
       --build-arg buildtime_varialbe_commit=$(buildtime_varialbe_commit)
 
 - task: Docker@2
