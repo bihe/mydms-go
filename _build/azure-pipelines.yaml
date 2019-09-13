@@ -63,7 +63,9 @@ steps:
     command: build
     Dockerfile: '$(modulePath)/Dockerfile'
     repository: bihe/mydms-go
-    tags: mydms
+    tags: |
+      latest
+      $(buildtime_variable_version)-$(buildtime_variable_timestamp)
     arguments: |
       --build-arg buildtime_variable_version=$(buildtime_variable_version)
       --build-arg buildtime_variable_timestamp=$(buildtime_variable_timestamp)
@@ -75,7 +77,6 @@ steps:
     command: push
     repository: bihe/mydms-go
     tags: |
-      mydms
       latest
       $(buildtime_variable_version)-$(buildtime_variable_timestamp)
 
