@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/features/senders"
@@ -23,6 +21,8 @@ import (
 	"github.com/bihe/mydms/features/upload"
 	"github.com/bihe/mydms/persistence"
 	"github.com/labstack/echo/v4"
+	"github.com/microcosm-cc/bluemonday"
+	log "github.com/sirupsen/logrus"
 )
 
 const jsonTimeLayout = "2006-01-02T15:04:05+07:00"
@@ -135,6 +135,7 @@ type Handler struct {
 	r          Repositories
 	fs         filestore.FileService
 	uc         upload.Config
+	policy     *bluemonday.Policy
 }
 
 // Repositories combines necessary repositories for the document handler
@@ -153,7 +154,9 @@ func NewHandler(repos Repositories, fs filestore.FileService, config upload.Conf
 		senderRepo: repos.SenderRepo,
 		uploadRepo: repos.UploadRepo,
 		fs:         fs,
-		uc:         config}
+		uc:         config,
+		policy:     bluemonday.UGCPolicy(),
+	}
 }
 
 // GetDocumentByID godoc
@@ -177,7 +180,7 @@ func (h *Handler) GetDocumentByID(c echo.Context) error {
 		return core.NotFoundError{Err: err, Request: c.Request()}
 	}
 
-	return c.JSON(http.StatusOK, convert(d))
+	return c.JSON(http.StatusOK, convert(h.policy, d))
 }
 
 // DeleteDocumentByID godoc
@@ -289,7 +292,7 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 
 	pDoc := PagedDcoument{
 		TotalEntries: docs.Count,
-		Documents:    convertList(docs.Documents),
+		Documents:    convertList(h.policy, docs.Documents),
 	}
 
 	return c.JSON(http.StatusOK, pDoc)
@@ -324,6 +327,8 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 		err = fmt.Errorf("could not bind supplied data: %v", err)
 		return core.BadRequestError{Err: err, Request: c.Request()}
 	}
+
+	d = sanitize(h.policy, d)
 
 	d.FileName, err = h.procssUploadFile(d.UploadToken, d.FileName, atomic)
 	if err != nil {
@@ -524,7 +529,29 @@ func initDocument(d *Document, sList, tList string) DocumentEntity {
 	}
 }
 
-func convert(d DocumentEntity) Document {
+func sanitize(policy *bluemonday.Policy, d *Document) *Document {
+	doc := Document{
+		ID:     d.ID,
+		Amount: d.Amount,
+	}
+	doc.Title = policy.Sanitize(d.Title)
+	doc.AltID = policy.Sanitize(d.AltID)
+	doc.Created = policy.Sanitize(d.Created)
+	doc.Modified = policy.Sanitize(d.Modified)
+	doc.FileName = policy.Sanitize(d.FileName)
+	doc.PreviewLink = policy.Sanitize(d.PreviewLink)
+	doc.UploadToken = policy.Sanitize(d.UploadToken)
+
+	for _, t := range d.Tags {
+		doc.Tags = append(doc.Tags, policy.Sanitize(t))
+	}
+	for _, s := range d.Senders {
+		doc.Senders = append(doc.Senders, policy.Sanitize(s))
+	}
+	return &doc
+}
+
+func convert(policy *bluemonday.Policy, d DocumentEntity) Document {
 	var (
 		tags    []string
 		senders []string
@@ -543,7 +570,7 @@ func convert(d DocumentEntity) Document {
 	if d.Modified.Valid {
 		mod = d.Modified.Time.Format(jsonTimeLayout)
 	}
-	return Document{
+	doc := sanitize(policy, &Document{
 		ID:          d.ID,
 		Title:       d.Title,
 		AltID:       d.AltID,
@@ -554,16 +581,17 @@ func convert(d DocumentEntity) Document {
 		PreviewLink: preview,
 		Tags:        tags,
 		Senders:     senders,
-	}
+	})
+	return *doc
 }
 
-func convertList(ds []DocumentEntity) []Document {
+func convertList(policy *bluemonday.Policy, ds []DocumentEntity) []Document {
 	var (
 		doc  Document
 		docs []Document
 	)
 	for _, d := range ds {
-		doc = convert(d)
+		doc = convert(policy, d)
 		docs = append(docs, doc)
 	}
 	return docs

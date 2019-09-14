@@ -22,6 +22,7 @@ require (
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/markusthoemmes/goautoneg v0.0.0-20190713162725-c6008fefa5b1
 	github.com/mattn/go-sqlite3 v1.11.0 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.2
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.4.0
 	github.com/swaggo/echo-swagger v0.0.0-20190329130007-1219b460a043
@@ -31,7 +32,7 @@ require (
 	github.com/ugorji/go v1.1.7 // indirect
 	github.com/urfave/cli v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20190907121410-71b5226ff739 // indirect
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
+	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2 // indirect
 	golang.org/x/sys v0.0.0-20190904154756-749cb33beabd // indirect
 	golang.org/x/tools v0.0.0-20190907020128-2ca718005c18 // indirect
 	google.golang.org/appengine v1.6.2 // indirect
