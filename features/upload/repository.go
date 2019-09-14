@@ -17,7 +17,6 @@ type Upload struct {
 
 // Repository provides CRUD methods for uploads
 type Repository interface {
-	persistence.BaseRepository
 	Write(item Upload, a persistence.Atomic) (err error)
 	Read(id string) (Upload, error)
 	Delete(id string, a persistence.Atomic) (err error)
@@ -33,11 +32,6 @@ func NewRepository(c persistence.Connection) (Repository, error) {
 		return nil, fmt.Errorf("no repository connection available")
 	}
 	return &dbRepository{c}, nil
-}
-
-// CreateAtomic returns a new atomic object
-func (rw *dbRepository) CreateAtomic() (persistence.Atomic, error) {
-	return rw.c.CreateAtomic()
 }
 
 // Write saves an upload item
