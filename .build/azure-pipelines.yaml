@@ -45,8 +45,10 @@ steps:
   displayName: 'Get dependencies'
 
 - script: |
-    go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./...
-    (($? == 0)) && { bash <(curl -s https://codecov.io/bash) }
+    go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./...; ec=$?
+    if [ $ec == 0 ]; then
+      bash <(curl -s https://codecov.io/bash)
+    fi
   continueOnError: false
   workingDirectory: '$(modulePath)'
   displayName: 'Run unit tests'
