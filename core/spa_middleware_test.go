@@ -16,6 +16,10 @@ const htmlPayload = `<html>
 <body><p>Hello, World<p></body>
 </html>`
 
+const noErrExpected = "no error expected: %v"
+const htmlStart = "<html>"
+const expectedHTML = "expected a html result"
+
 func TestJwtMiddleware(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/ui", nil)
@@ -44,22 +48,22 @@ func TestJwtMiddleware(t *testing.T) {
 	c.SetPath("/ui")
 	err := h(c)
 	if err != nil {
-		t.Errorf("no error expected: %v", err)
+		t.Errorf(noErrExpected, err)
 	}
 	result := string(rec.Body.Bytes())
-	if result == "" && strings.Index(result, "<html>") == -1 {
-		t.Errorf("expected a html result")
+	if result == "" && strings.Index(result, htmlStart) == -1 {
+		t.Errorf(expectedHTML)
 	}
 
 	// is handled because of config.RedirectEmptyPath
 	c.SetPath("")
 	err = h(c)
 	if err != nil {
-		t.Errorf("no error expected: %v", err)
+		t.Errorf(noErrExpected, err)
 	}
 	result = string(rec.Body.Bytes())
-	if result == "" && strings.Index(result, "<html>") == -1 {
-		t.Errorf("expected a html result")
+	if result == "" && strings.Index(result, htmlStart) == -1 {
+		t.Errorf(expectedHTML)
 	}
 
 	// non-matched path -- resturn a 404

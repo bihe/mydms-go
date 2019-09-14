@@ -228,6 +228,7 @@ func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, 
 	qc := "SELECT count(id) FROM DOCUMENTS"
 	where := "\nWHERE 1=1"
 	paging := ""
+	orderby := orderBy(order)
 	arg := make(map[string]interface{})
 
 	// use the supplied search-object to create the query
@@ -269,18 +270,6 @@ func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, 
 	if err = rw.c.Get(&c, query, args...); err != nil {
 		err = fmt.Errorf("could not get the total number of documents: %v", err)
 		return
-	}
-
-	// query the documents
-	orderby := ""
-	if order != nil && len(order) > 0 {
-		orderby = "\nORDER BY "
-		for i, o := range order {
-			if i > 0 {
-				orderby += ", "
-			}
-			orderby += fmt.Sprintf("%s %s", o.Field, o.Order)
-		}
 	}
 
 	// retrieve the documents
@@ -362,4 +351,18 @@ func randomString(n int) string {
 		b[i] = letter[rand.Intn(len(letter))]
 	}
 	return string(b)
+}
+
+func orderBy(order []OrderBy) string {
+	orderby := ""
+	if order != nil && len(order) > 0 {
+		orderby = "\nORDER BY "
+		for i, o := range order {
+			if i > 0 {
+				orderby += ", "
+			}
+			orderby += fmt.Sprintf("%s %s", o.Field, o.Order)
+		}
+	}
+	return orderby
 }
