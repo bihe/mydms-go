@@ -71,7 +71,7 @@ steps:
     repository: bihe/mydms-go
     tags: |
       latest
-      $(buildtime_varialbe_commit)
+      $(buildtime_variable_commit)
     arguments: |
       --build-arg buildtime_variable_version=$(buildtime_variable_version)
       --build-arg buildtime_variable_timestamp=$(TSTAMP)
@@ -84,5 +84,5 @@ steps:
     repository: bihe/mydms-go
     tags: |
       latest
-      $(buildtime_varialbe_commit)
+      $(buildtime_variable_commit)
 
