@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v4"
@@ -21,7 +22,6 @@ func TestJwtMiddleware(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	c.SetPath("/ui")
 	tempPath := getTempPath()
 	file := "index.html"
 	filePath := filepath.Join(tempPath, file)
@@ -41,21 +41,39 @@ func TestJwtMiddleware(t *testing.T) {
 	})
 	req.Header.Set("Accept", "text/html")
 
+	c.SetPath("/ui")
 	err := h(c)
 	if err != nil {
 		t.Errorf("no error expected: %v", err)
 	}
+	result := string(rec.Body.Bytes())
+	if result == "" && strings.Index(result, "<html>") == -1 {
+		t.Errorf("expected a html result")
+	}
 
+	// is handled because of config.RedirectEmptyPath
 	c.SetPath("")
 	err = h(c)
 	if err != nil {
 		t.Errorf("no error expected: %v", err)
 	}
+	result = string(rec.Body.Bytes())
+	if result == "" && strings.Index(result, "<html>") == -1 {
+		t.Errorf("expected a html result")
+	}
 
+	// non-matched path -- resturn a 404
 	c.SetPath("/api/v1")
 	err = h(c)
-	if err != nil {
-		t.Errorf("no error expected: %v", err)
+	if err == nil {
+		t.Errorf("error expected")
+	}
+	if echoErr, ok := err.(*echo.HTTPError); ok {
+		if echoErr.Code != 404 {
+			t.Errorf("code 404 expected")
+		}
+	} else {
+		t.Errorf("HTTPError expected")
 	}
 }
 
