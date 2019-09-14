@@ -17,10 +17,6 @@ variables:
 
 steps:
 
-- bash: |
-    echo Current TSTAMP: $(TSTAMP)
-    displayName: 'Show timestamp'
-
 # Go tool installer
 # Find in cache or download a specific version of Go and add it to the PATH
 - task: GoTool@0
