@@ -19,6 +19,7 @@ steps:
 
 - bash: |
     echo Current TSTAMP: $(TSTAMP)
+    displayName: 'Show timestamp'
 
 # Go tool installer
 # Find in cache or download a specific version of Go and add it to the PATH
@@ -46,7 +47,9 @@ steps:
 
 - script: |
     go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./...; ec=$?
+    echo "go test result is - $ec"
     if [ $ec == 0 ]; then
+      echo "do codecov upload"
       bash <(curl -s https://codecov.io/bash)
     fi
   continueOnError: false
