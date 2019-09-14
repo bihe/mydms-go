@@ -35,24 +35,26 @@ steps:
     echo '##vso[task.prependpath]$(GOBIN)'
     echo '##vso[task.prependpath]$(GOROOT)/bin'
   displayName: 'Set up the Go workspace'
+  continueOnError: false
 
 - script: |
     go version
     go get -v -t -d ./...
   workingDirectory: '$(modulePath)'
+  continueOnError: false
   displayName: 'Get dependencies'
 
 - script: |
     go test -v -race -coverprofile=coverage.txt -covermode atomic 2>&1 ./...
-    bash <(curl -s https://codecov.io/bash)
-  continueOnError: true
+    (($? == 0)) && { bash <(curl -s https://codecov.io/bash) }
+  continueOnError: false
   workingDirectory: '$(modulePath)'
   displayName: 'Run unit tests'
 
 - script: |
     go build -v
   workingDirectory: '$(modulePath)'
-  continueOnError: true
+  continueOnError: false
   displayName: 'Build App: mydms-go'
 
 - task: Docker@2
