@@ -8,26 +8,32 @@
             </div>
 
             <div class="cardheader"  (click)="editDocument(item)">
-              <h4 matTooltip="{{ item.title }}" matTooltipPosition="below">
-                  
-                <i class="fa fa-file-o" aria-hidden="true"></i>
-                {{ item.title | ellipsis:20 }}</h4>
+              <h5 matTooltip="{{ item.title }}" matTooltipPosition="below">
+                {{ item.title | ellipsis:20 }}
+              </h5>
 
             </div>
 
             <div class="download">
-                <a href="/api/v1/file/?path={{ item.previewLink }}"><i class="fa fa-cloud-download fa-3x" aria-hidden="true"></i></a>
-                
+                <a href="/api/v1/file/?path={{ item.previewLink }}" target="_blank" class="download_cloud"><i class="fa fa-cloud-download fa-3x" aria-hidden="true"></i></a>
             </div>
 
             <div class="senders">
                 <mat-chip-list>
-                    <mat-chip *ngFor="let sender of item.senders"><i class="fa fa-truck" aria-hidden="true"></i> {{ sender | ellipsis: 15 }}</mat-chip>
+                    <mat-chip *ngFor="let sender of item.senders">
+                      <span class="sender-tag">
+                        <i class="fa fa-truck" aria-hidden="true"></i>&nbsp;{{ sender | ellipsis: 15 }}
+                      </span>
+                    </mat-chip>
                 </mat-chip-list>
             </div>
             <div class="tags">
                 <mat-chip-list>
-                    <mat-chip *ngFor="let tag of item.tags"><i class="fa fa-hashtag" aria-hidden="true"></i> {{ tag | ellipsis: 15 }}</mat-chip>
+                    <mat-chip *ngFor="let tag of item.tags">
+                      <span class="tag">
+                        <i class="fa fa-hashtag" aria-hidden="true"></i>&nbsp;{{ tag | ellipsis: 15 }}
+                      </span>
+                    </mat-chip>
                 </mat-chip-list>
             </div>
 
@@ -38,10 +44,10 @@
             </div>
             <div class="leftInfo">
                 <span class="infoElement">
-                    <span *ngIf="item.modified"><i class="fa fa-calendar" aria-hidden="true"></i> <span class="date">M: {{ item.modified | dfmt:"DD.MM.YYYY" }}</span>
+                    <span *ngIf="item.modified"><i class="fa fa-clock-o" aria-hidden="true"></i>&nbsp;<span class="date">{{ item.modified | dfmt:"DD.MM.YYYY" }} (mod)</span>
                     <br/>
                     </span>
-                    <i class="fa fa-calendar" aria-hidden="true"></i> <span class="date">C: {{ item.created | dfmt:"DD.MM.YYYY" }}</span>
+                    <i class="fa fa-clock-o" aria-hidden="true"></i>&nbsp;<span class="date">{{ item.created | dfmt:"DD.MM.YYYY" }} (cre)</span>
                 </span>
             </div>
         </div>
@@ -60,10 +66,10 @@
     </div>
 
 </div>
-  
+
 
 <div class="add" >
-    <button mat-fab 
+    <button mat-fab
         color="accent"
         (click)="addDocument()">
         <i class="fa fa-plus fa-2x" aria-hidden="true" matTooltip="Add a new document" matTooltipPosition="before"></i>

@@ -37,9 +37,10 @@ export class DocumentComponent implements OnInit {
   documentTitle = '';
   documentAmount = 0;
   uploadFileName = '';
-  private uploadToken = '';
-  encodedUploadFileName = '';
 
+  encodedUploadFileName = '';
+  private uploadToken = '';
+  private showAmount = false;
   public A: ApplicationData;
 
   constructor(
@@ -76,6 +77,12 @@ export class DocumentComponent implements OnInit {
       return;
     }
 
+    this.state.getShowAmount().subscribe(
+      x => {
+        this.showAmount = x;
+      }
+    );
+
     this.state.setProgress(true);
     this.service.getDocument(id)
       .subscribe(
@@ -102,7 +109,9 @@ export class DocumentComponent implements OnInit {
             this.isNewDocument = false;
 
             this.documentTitle = this.document.title;
-            this.documentAmount = this.document.amount;
+            if (this.showAmount) {
+              this.documentAmount = this.document.amount;
+            }
             this.uploadFileName = this.document.fileName;
             this.uploadToken = '-';
             this.encodedUploadFileName = this.document.previewLink;

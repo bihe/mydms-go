@@ -209,3 +209,12 @@ div.navinfo {
     background-color: transparent;
 
 }
+
+.amount_toggle {
+  font-size: 0.8em;
+
+}
+
+.amount_toggle_text {
+  font-weight: normal !important;
+}

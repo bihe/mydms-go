@@ -18,3 +18,8 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; }
 .info {
   background-color: #5DADE2  !important;
 }
+
+.mat-card-header-text {
+  width: 100%;
+}
+

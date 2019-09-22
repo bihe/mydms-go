@@ -1,15 +1,16 @@
 <mat-card>
 
-    <mat-card-header>
+    <mat-card-header class="document_heading">
         <div mat-card-avatar class="document__icon"><i class="fa fa-file-pdf-o fa-2x" aria-hidden="true"></i></div>
-        <mat-card-title>
-            <mat-form-field color="warn" hintLabel="Specify the name of the document">
+        <mat-card-title class="document_heading">
+            <mat-form-field color="warn" hintLabel="Specify the name of the document" class="document_title">
                 <input matInput placeholder="Document title" [(ngModel)]="documentTitle">
             </mat-form-field>
         </mat-card-title>
 
     </mat-card-header>
-    <div class="upload__zone">
+
+    <div class="upload__zone upload_section">
             <div class="drop-container" [hidden]="uploadFileName != ''"
                 ngFileDrop
                 (uploadOutput)="onUploadOutput($event)"
@@ -29,7 +30,9 @@
 
             <div class="uploadfile" *ngIf="uploadFileName != ''">
                 <div class="pull-left">
-                  <i class="fa fa-cloud-download" aria-hidden="true"></i> <a href="/api/v1/file/?path={{ encodedUploadFileName }}">{{ uploadFileName | ellipsis:25 }}</a>
+                  <span class="upload_link">
+                    <i class="fa fa-cloud-download" aria-hidden="true"></i>&nbsp;<a target="_blank" href="/api/v1/file/?path={{ encodedUploadFileName }}">{{ uploadFileName | ellipsis:50 }}</a>
+                  </span>
                 </div>
                 <div class="pull-right">
                   <i class="fa fa-times" aria-hidden="true" (click)="onClearUploadedFile()"></i>
@@ -41,7 +44,7 @@
 
 
     <mat-card-content>
-        <div>
+        <div *ngIf="showAmount === true">
 
             <mat-form-field color="warn" hintLabel="Optional amount">
                 <input type="number" matInput placeholder="Amount" [(ngModel)]="documentAmount">

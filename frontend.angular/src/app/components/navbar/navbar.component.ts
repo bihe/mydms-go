@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { MatSnackBar } from '@angular/material';
+import { MatSnackBar, MatSlideToggleChange } from '@angular/material';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { ApplicationData } from '../../shared/models/application.data';
@@ -17,6 +17,7 @@ export class NavbarComponent implements OnInit {
   menuVisible = false;
   showProgress = false;
   searchText = '';
+  showAmount = false;
 
   public A: ApplicationData;
 
@@ -61,6 +62,13 @@ export class NavbarComponent implements OnInit {
         }
       );
 
+    this.state.getShowAmount()
+    .subscribe(
+      x => {
+        this.showAmount = x;
+      }
+    );
+
   }
 
   onSearch(searchText: string) {
@@ -82,5 +90,11 @@ export class NavbarComponent implements OnInit {
   navigateTo(destination: string) {
     this.toggleMenu(false);
     this.router.navigate([destination]);
+  }
+
+  showAmountToggle(event: MatSlideToggleChange) {
+    console.log('Change showAmount to ' + event.checked);
+    this.state.setShowAmount(event.checked);
+    this.state.setRequestReload(true);
   }
 }

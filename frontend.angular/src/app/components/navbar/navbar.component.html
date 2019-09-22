@@ -46,6 +46,14 @@
   </div>
   <ul class="menu__list">
     <li><i class="fa fa-home" aria-hidden="true"></i> <a (click)="navigateTo('')">Home</a></li>
+    <li>
+      <mat-slide-toggle
+          class="amount_toggle"
+          [checked]="showAmount"
+          (change)="showAmountToggle($event)">
+          <span class="amount_toggle_text"><i class="fa fa-eur" aria-hidden="true"></i>&nbsp;show amount</span>
+      </mat-slide-toggle>
+    </li>
   </ul>
 </div>
 

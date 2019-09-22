@@ -1,8 +1,8 @@
 .document {
-    padding: 6px;
-    min-height: 250px;
+    padding: 2px;
+    min-height: 180px;
     min-width: 290px;
-    margin-bottom: 15px;
+    margin-bottom: 1px;
     text-align: left;
     display: inline-block;
 
@@ -81,6 +81,11 @@
     padding-bottom:0px;
 }
 
+.card h5 {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
 .card p {
     margin:0px;
     padding:10px;
@@ -92,7 +97,7 @@
   padding-bottom: 10px;
   padding-left: 10px;
   color: white;
-  background-color: #1B4F72;
+  background-color:#1b4f72;
 }
 
 .card .topic {
@@ -146,12 +151,12 @@
 
 
 .add {
-    
+
     cursor: pointer;
     position: fixed;
     bottom: 50px;
     right: 30px;
-    
+
 }
 
 @media (max-width: 600px) {
@@ -187,12 +192,12 @@
 }
 
 .senders .mat-chip:not(.mat-basic-chip) {
-    background-color: #E64A19;
+    background-color:#e64a19;
     color: white;
 }
 
 .tags .mat-chip:not(.mat-basic-chip) {
-    background-color: #F1C40F  ;
+    background-color: #f1c40f;
     color: rgba(0,0,0,.87);
 }
 
@@ -210,4 +215,20 @@
 .clear__search {
     background-color: #6C3483;
     color: white;
+}
+
+.sender-tag {
+  font-size: 0.8em;
+}
+
+.tag {
+  font-size: 0.8em;
+}
+
+.download_cloud {
+  color: white;
+}
+
+.download_cloud:hover {
+  color: #28B463;
 }

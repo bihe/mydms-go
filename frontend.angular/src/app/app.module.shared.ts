@@ -20,9 +20,9 @@ import { ApplicationState } from './shared/services/app.state';
 
 @NgModule({
   imports: [ MatInputModule, MatSnackBarModule, MatDialogModule, MatNativeDateModule, MatProgressSpinnerModule,
-    MatTooltipModule, MatChipsModule, MatCardModule, MatSlideToggleModule, MatButtonModule ],
+    MatTooltipModule, MatChipsModule, MatCardModule, MatSlideToggleModule, MatButtonModule, MatSlideToggleModule  ],
   exports: [ MatInputModule, MatSnackBarModule, MatDialogModule, MatNativeDateModule, MatProgressSpinnerModule,
-    MatTooltipModule, MatChipsModule, MatCardModule, MatSlideToggleModule, MatButtonModule ],
+    MatTooltipModule, MatChipsModule, MatCardModule, MatSlideToggleModule, MatButtonModule, MatSlideToggleModule ],
 })
 export class AppMaterialModule { }
 

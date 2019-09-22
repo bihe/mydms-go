@@ -18,6 +18,7 @@ export class HomeComponent implements OnInit {
   documents: Array<Document> = new Array<Document>();
   totalEntries = 0;
   shownResults = 0;
+  showAmount = false;
 
   readonly InitialPageSize: number = 20;
   private pagedDocuments: Array<Document> = null;
@@ -37,6 +38,21 @@ export class HomeComponent implements OnInit {
         this.documents = [];
         this.searchDocuments(x, 0);
     });
+
+    this.state.getShowAmount().subscribe(
+      x => {
+        this.showAmount = x;
+      }
+    );
+
+    this.state.getRequestReload().subscribe(
+      reload => {
+        if (reload) {
+          this.documents = new Array<Document>();
+          this.searchDocuments(null, 0);
+        }
+      }
+    );
   }
 
   ngOnInit() {
@@ -77,7 +93,9 @@ export class HomeComponent implements OnInit {
               doc.title = a.title;
               doc.created = a.created;
               doc.modified = a.modified;
-              doc.amount = a.amount;
+              if (this.showAmount) {
+                doc.amount = a.amount;
+              }
               doc.fileName = a.fileName;
               doc.encodedFilename = btoa(encodeURI(a.fileName));
               doc.previewLink = a.previewLink;
