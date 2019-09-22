@@ -39,8 +39,8 @@ export class DocumentComponent implements OnInit {
   uploadFileName = '';
 
   encodedUploadFileName = '';
+  showAmount = false;
   private uploadToken = '';
-  private showAmount = false;
   public A: ApplicationData;
 
   constructor(
