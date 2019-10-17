@@ -9,6 +9,8 @@ import (
 	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+
+	sec "github.com/bihe/commons-go/security"
 )
 
 const authHeader = "Authorization"
@@ -24,7 +26,7 @@ func TestJwtMiddleware(t *testing.T) {
 		JwtSecret:  "secret",
 		JwtIssuer:  "test",
 		CookieName: "test",
-		RequiredClaim: Claim{
+		RequiredClaim: sec.Claim{
 			Name:  "claim",
 			URL:   "http://localhost",
 			Roles: []string{"roleA"},

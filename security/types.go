@@ -1,6 +1,9 @@
 package security
 
-import "github.com/labstack/echo/v4"
+import (
+	sec "github.com/bihe/commons-go/security"
+	"github.com/labstack/echo/v4"
+)
 
 // JwtOptions defines presets for the Authentication handler
 // by the default the JWT token is fetched from the Authentication header
@@ -13,35 +16,15 @@ type JwtOptions struct {
 	// CookieName spedifies the HTTP cookie holding the token
 	CookieName string
 	// RequiredClaim to access the application
-	RequiredClaim Claim
+	RequiredClaim sec.Claim
 	// RedirectURL forwards the request to an external authentication service
 	RedirectURL string
 	// CacheDuration defines the duration to cache the JWT token result
 	CacheDuration string
 }
 
-// User is the authenticated principal extracted from the JWT token
-type User struct {
-	Username      string
-	Roles         []string
-	Email         string
-	UserID        string
-	DisplayName   string
-	Authenticated bool
-}
-
-// Claim defines the authorization requiremenets
-type Claim struct {
-	// Name of the applicatiion
-	Name string
-	// URL of the application
-	URL string
-	// Roles possible roles
-	Roles []string
-}
-
 // ServerContext is a application specific context implementation
 type ServerContext struct {
 	echo.Context
-	Identity User
+	Identity sec.User
 }

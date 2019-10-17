@@ -17,6 +17,8 @@ import (
 
 	_ "github.com/bihe/mydms/docs"
 	echoSwagger "github.com/swaggo/echo-swagger"
+
+	sec "github.com/bihe/commons-go/security"
 )
 
 var (
@@ -103,7 +105,7 @@ func setupAPIServer() (*echo.Echo, string) {
 		JwtSecret:  c.Sec.JwtSecret,
 		JwtIssuer:  c.Sec.JwtIssuer,
 		CookieName: c.Sec.CookieName,
-		RequiredClaim: security.Claim{
+		RequiredClaim: sec.Claim{
 			Name:  c.Sec.Claim.Name,
 			URL:   c.Sec.Claim.URL,
 			Roles: c.Sec.Claim.Roles,

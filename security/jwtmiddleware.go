@@ -10,11 +10,13 @@ import (
 
 	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
+
+	sec "github.com/bihe/commons-go/security"
 )
 
 // JwtWithConfig returns the configured JWT Auth middleware
 func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
-	cache := newMemCache(parseDuration(options.CacheDuration))
+	cache := sec.NewMemCache(parseDuration(options.CacheDuration))
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
@@ -39,8 +41,8 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 			}
 
 			// to speed up processing use the cache for token lookups
-			var user User
-			u := cache.get(token)
+			var user sec.User
+			u := cache.Get(token)
 			if u != nil {
 				// cache hit, put the user in the context
 				log.Debug("Cache HIT!")
@@ -61,7 +63,8 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 				}
 			}
 			var roles []string
-			if roles, err = Authorize(options.RequiredClaim, payload.Claims); err != nil {
+			claim := options.RequiredClaim
+			if roles, err = sec.Authorize(sec.Claim{Name: claim.Name, URL: claim.URL, Roles: claim.Roles}, payload.Claims); err != nil {
 				log.Warnf("Insufficient permissions to access the resource: %s", err)
 				return core.RedirectError{
 					Status:  http.StatusForbidden,
@@ -71,7 +74,7 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 				}
 			}
 
-			user = User{
+			user = sec.User{
 				DisplayName:   payload.DisplayName,
 				Email:         payload.Email,
 				Roles:         roles,
@@ -79,7 +82,7 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 				Username:      payload.UserName,
 				Authenticated: true,
 			}
-			cache.set(token, &user)
+			cache.Set(token, &user)
 			sc := &ServerContext{Context: c, Identity: user}
 			return next(sc)
 		}

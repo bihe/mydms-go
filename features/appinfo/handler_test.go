@@ -10,6 +10,8 @@ import (
 	"github.com/bihe/mydms/security"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+
+	sec "github.com/bihe/commons-go/security"
 )
 
 func TestGetAppInfo(t *testing.T) {
@@ -18,7 +20,7 @@ func TestGetAppInfo(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	u := security.User{
+	u := sec.User{
 		Username:      "test",
 		Roles:         []string{"roleA"},
 		Email:         "a.b@c.de",
