@@ -9,7 +9,7 @@
 
             <div class="cardheader"  (click)="editDocument(item)">
               <h5 matTooltip="{{ item.title }}" matTooltipPosition="below">
-                {{ item.title | ellipsis:20 }}
+                {{ item.title | ellipsis:30 }}
               </h5>
 
             </div>
@@ -60,7 +60,7 @@
         </p>
     </div>
 
-    <div *ngIf="shownResults < totalEntries">
+    <div *ngIf="shownResults < totalEntries" class="show_more_results">
         <p>Currently showing {{ shownResults }} result<span *ngIf="shownResults > 1">s</span> of total {{ totalEntries }}</p>
         <button mat-icon-button class="more__results" (click)="showMoreResults()" matTooltip="Load more results"><i class="fa fa-ellipsis-h" aria-hidden="true"></i></button>
     </div>
