@@ -70,18 +70,18 @@ export class DocumentComponent implements OnInit {
 
     this.isNewDocument = true;
 
+    this.state.getShowAmount().subscribe(
+      x => {
+        this.showAmount = x;
+      }
+    );
+
     const id = this.route.snapshot.params['id'] || -1;
     console.log('Got route id: ' + id);
     if (id === -1 || id === '-1') {
       this.document = null;
       return;
     }
-
-    this.state.getShowAmount().subscribe(
-      x => {
-        this.showAmount = x;
-      }
-    );
 
     this.state.setProgress(true);
     this.service.getDocument(id)
