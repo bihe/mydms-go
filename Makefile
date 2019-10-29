@@ -8,7 +8,7 @@ COMMIT=`git rev-parse HEAD | cut -c 1-8`
 BUILD=`date -u +%Y%m%d.%H%M%S`
 
 compile:
-	@-$(MAKE) -s go-compile
+	@-$(MAKE) -s go-clean go-compile
 
 release:
 	@-$(MAKE) -s go-compile-release
@@ -27,6 +27,18 @@ run:
 
 clean:
 	@-$(MAKE) go-clean
+
+swagger:
+	@-$(MAKE) go-swagger
+
+docker:
+	@-$(MAKE) do-docker-build
+
+docker-run:
+	@-$(MAKE) do-docker-run
+
+frontend:
+	@-$(MAKE) do-frontend-build
 
 
 go-compile: go-clean go-build
@@ -61,5 +73,20 @@ go-clean:
 	@echo "  >  Cleaning build cache"
 	go clean ./...
 	rm -f ./mydms.api
+
+go-swagger:
+	# go get -u github.com/swaggo/swag/cmd/swag
+	@echo "  >  Create/Update the swagger files"
+	swag init -g server.go
+
+do-docker-build: docker build -t mydms .
+
+do-docker-run:
+	@echo "  >  Run docker image mydms ..."
+	docker run -it -p 127.0.0.1:3000:3000 -v $PWD:/opt/mydms/etc mydms
+
+do-frontend-build:
+	@echo "  >  Building angular frontend ..."
+	cd ./frontend.angular;	npm install && npm run build -- --prod --base-href /ui/
 
 .PHONY: compile release test run clean coverage
