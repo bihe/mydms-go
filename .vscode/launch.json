@@ -10,11 +10,10 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "args": [
-            ],
+            "env": {},
+			"args": [],
             "internalConsoleOptions": "openOnSessionStart",
-            "showLog": true,
-            "output": "debug"
+            "showLog": true
         }
     ]
 }
