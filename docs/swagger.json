@@ -31,13 +31,13 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -78,19 +78,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -157,19 +157,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -201,25 +201,25 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -249,19 +249,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -296,31 +296,31 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -349,19 +349,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -399,19 +399,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -440,19 +440,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -490,19 +490,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -537,19 +537,19 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/core.ProblemDetail"
+                            "$ref": "#/definitions/errors.ProblemDetail"
                         }
                     }
                 }
@@ -607,31 +607,6 @@
                 },
                 "version": {
                     "description": "Version of the application",
-                    "type": "string"
-                }
-            }
-        },
-        "core.ProblemDetail": {
-            "type": "object",
-            "properties": {
-                "detail": {
-                    "description": "Detail is a human-readable explanation specific to this occurrence of the problem",
-                    "type": "string"
-                },
-                "instance": {
-                    "description": "Instance is a URI reference that identifies the specific occurrence of the problem",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "Status is the HTTP status code",
-                    "type": "integer"
-                },
-                "title": {
-                    "description": "Title is a short, human-readable summary of the problem type",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "Type is a URI reference [RFC3986] that identifies the\nproblem type.  This specification encourages that, when\ndereferenced, it provide human-readable documentation for the problem",
                     "type": "string"
                 }
             }
@@ -702,6 +677,31 @@
                 },
                 "result": {
                     "type": "integer"
+                }
+            }
+        },
+        "errors.ProblemDetail": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "description": "Detail is a human-readable explanation specific to this occurrence of the problem",
+                    "type": "string"
+                },
+                "instance": {
+                    "description": "Instance is a URI reference that identifies the specific occurrence of the problem",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status is the HTTP status code",
+                    "type": "integer"
+                },
+                "title": {
+                    "description": "Title is a short, human-readable summary of the problem type",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type is a URI reference [RFC3986] that identifies the\nproblem type.  This specification encourages that, when\ndereferenced, it provide human-readable documentation for the problem",
+                    "type": "string"
                 }
             }
         },

@@ -5,7 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/bihe/mydms/core"
+	"github.com/bihe/mydms/internal/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -26,9 +26,9 @@ type Handler struct {
 // @Tags senders
 // @Produce  json
 // @Success 200 {array} senders.Sender
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 404 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 404 {object} errors.ProblemDetail
 // @Router /api/v1/senders [get]
 func (h *Handler) GetAllSenders(c echo.Context) error {
 	var (
@@ -39,7 +39,7 @@ func (h *Handler) GetAllSenders(c echo.Context) error {
 	log.Debug("return all available senders.")
 
 	if senders, err = h.R.GetAllSenders(); err != nil {
-		return core.NotFoundError{Err: err, Request: c.Request()}
+		return errors.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	for _, t := range senders {
@@ -55,9 +55,9 @@ func (h *Handler) GetAllSenders(c echo.Context) error {
 // @Produce  json
 // @Param name query string true "SearchString"
 // @Success 200 {array} senders.Sender
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 404 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 404 {object} errors.ProblemDetail
 // @Router /api/v1/senders/search [get]
 func (h *Handler) SearchForSenders(c echo.Context) error {
 	var (
@@ -71,7 +71,7 @@ func (h *Handler) SearchForSenders(c echo.Context) error {
 	log.Debugf("search for senders which match '%s'.", s)
 
 	if senders, err = h.R.SearchSenders(s); err != nil {
-		return core.NotFoundError{Err: err, Request: c.Request()}
+		return errors.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	for _, t := range senders {

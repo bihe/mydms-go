@@ -9,7 +9,7 @@ import (
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 )
 
 var errTx = fmt.Errorf("start transaction failed")

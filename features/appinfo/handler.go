@@ -3,10 +3,10 @@ package appinfo
 import (
 	"net/http"
 
+	"github.com/bihe/mydms/internal"
+	"github.com/bihe/mydms/internal/security"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/bihe/mydms/core"
-	"github.com/bihe/mydms/security"
 	"github.com/labstack/echo/v4"
 )
 
@@ -50,7 +50,7 @@ type VersionInfo struct {
 
 // Handler provides methos for applicatin metadata
 type Handler struct {
-	core.VersionInfo
+	internal.VersionInfo
 }
 
 // GetAppInfo godoc
@@ -59,8 +59,8 @@ type Handler struct {
 // @Tags appinfo
 // @Produce  json
 // @Success 200 {object} appinfo.AppInfo
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
 // @Router /api/v1/appinfo [get]
 func (h *Handler) GetAppInfo(c echo.Context) error {
 	sc := c.(*security.ServerContext)

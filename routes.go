@@ -1,19 +1,20 @@
 package main
 
 import (
-	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/features/appinfo"
 	"github.com/bihe/mydms/features/documents"
 	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal"
+	"github.com/bihe/mydms/internal/config"
+	"github.com/bihe/mydms/internal/persistence"
 	"github.com/labstack/echo/v4"
 )
 
 // registerRoutes defines the routes of the available handlers
-func registerRoutes(e *echo.Echo, con persistence.Connection, config core.Configuration, version core.VersionInfo) (err error) {
+func registerRoutes(e *echo.Echo, con persistence.Connection, config config.AppConfig, version internal.VersionInfo) (err error) {
 	var (
 		tr tags.Repository
 		sr senders.Repository

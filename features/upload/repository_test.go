@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 )

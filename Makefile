@@ -51,7 +51,7 @@ go-run:
 
 go-test:
 	@echo "  >  Go test ..."
-	go test -race ./...
+	go test ./...
 
 go-clean-test:
 	@echo "  >  Go test (no cache)..."

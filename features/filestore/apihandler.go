@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bihe/mydms/core"
+	"github.com/bihe/mydms/internal/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -25,24 +25,24 @@ func NewHandler(fs FileService) *Handler {
 // @Tags filestore
 // @Param path query string true "Path"
 // @Success 200 {array} byte
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 400 {object} core.ProblemDetail
-// @Failure 404 {object} core.ProblemDetail
-// @Failure 500 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 400 {object} errors.ProblemDetail
+// @Failure 404 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
 // @Router /api/v1/file [get]
 func (h *Handler) GetFile(c echo.Context) error {
 	path := c.QueryParam("path")
 	decodedPath, err := base64.StdEncoding.DecodeString(path)
 	if err != nil {
-		return core.BadRequestError{
+		return errors.BadRequestError{
 			Err:     fmt.Errorf("the supplied path param cannot be decoded. %v", err),
 			Request: c.Request()}
 	}
 
 	file, err := h.fs.GetFile(string(decodedPath))
 	if err != nil {
-		return core.NotFoundError{
+		return errors.NotFoundError{
 			Err:     fmt.Errorf("file not found '%s'. %v", decodedPath, err),
 			Request: c.Request(),
 		}

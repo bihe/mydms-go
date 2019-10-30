@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 )
 
 // TagEntity is used to categorize a document

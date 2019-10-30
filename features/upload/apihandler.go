@@ -10,12 +10,11 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/bihe/mydms/core"
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/errors"
+	"github.com/bihe/mydms/internal/persistence"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 // Result represents status of the upload opeation
@@ -43,19 +42,19 @@ func NewHandler(r Repository, config Config) *Handler {
 // @Produce  json
 // @Param file formData file true "file to upload"
 // @Success 200 {object} upload.Result
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 500 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
 // @Router /api/v1/uploads/file [post]
 func (h *Handler) UploadFile(c echo.Context) error {
 	// Source
 	file, err := c.FormFile("file")
 	if err != nil {
-		return core.BadRequestError{Err: fmt.Errorf("no file provided: %v", err), Request: c.Request()}
+		return errors.BadRequestError{Err: fmt.Errorf("no file provided: %v", err), Request: c.Request()}
 	}
 
 	if file.Size > h.config.MaxUploadSize {
-		return core.BadRequestError{
+		return errors.BadRequestError{
 			Err:     fmt.Errorf("the upload exceeds the maximum size of %d - filesize is: %d", h.config.MaxUploadSize, file.Size),
 			Request: c.Request()}
 	}
@@ -70,7 +69,7 @@ func (h *Handler) UploadFile(c echo.Context) error {
 		}
 	}
 	if !typeAllowed {
-		return core.BadRequestError{
+		return errors.BadRequestError{
 			Err:     fmt.Errorf("the uploaded file-type '%s' is not allowed, only use: '%s'", ext, strings.Join(h.config.AllowedFileTypes, ",")),
 			Request: c.Request()}
 	}
@@ -78,7 +77,7 @@ func (h *Handler) UploadFile(c echo.Context) error {
 
 	src, err := file.Open()
 	if err != nil {
-		return core.BadRequestError{Err: fmt.Errorf("could not open upload file: %v", err), Request: c.Request()}
+		return errors.BadRequestError{Err: fmt.Errorf("could not open upload file: %v", err), Request: c.Request()}
 	}
 	defer src.Close()
 
@@ -88,13 +87,13 @@ func (h *Handler) UploadFile(c echo.Context) error {
 	uploadPath := path.Join(h.config.UploadPath, tempFileName)
 	dst, err := os.Create(uploadPath)
 	if err != nil {
-		return core.ServerError{Err: fmt.Errorf("could not create file: %v", err), Request: c.Request()}
+		return errors.ServerError{Err: fmt.Errorf("could not create file: %v", err), Request: c.Request()}
 	}
 	defer dst.Close()
 
 	// Copy
 	if _, err = io.Copy(dst, src); err != nil {
-		return core.ServerError{Err: fmt.Errorf("could not copy file: %v", err), Request: c.Request()}
+		return errors.ServerError{Err: fmt.Errorf("could not copy file: %v", err), Request: c.Request()}
 	}
 
 	u := Upload{
@@ -109,7 +108,7 @@ func (h *Handler) UploadFile(c echo.Context) error {
 		if ioerr != nil {
 			log.Warnf("Clean-Up file-upload. Could not delete temp file: '%s': %v", uploadPath, ioerr)
 		}
-		return core.ServerError{Err: fmt.Errorf("could not save upload item in store: %v", err), Request: c.Request()}
+		return errors.ServerError{Err: fmt.Errorf("could not save upload item in store: %v", err), Request: c.Request()}
 	}
 	c.JSON(http.StatusCreated, Result{Token: id, Message: fmt.Sprintf("File '%s' was uploaded successfully!", file.Filename)})
 

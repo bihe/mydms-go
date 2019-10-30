@@ -8,10 +8,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/bihe/mydms/core"
 	"github.com/labstack/echo/v4"
 
 	sec "github.com/bihe/commons-go/security"
+	"github.com/bihe/mydms/internal/errors"
 )
 
 // JwtWithConfig returns the configured JWT Auth middleware
@@ -30,7 +30,7 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 				var cookie *http.Cookie
 				if cookie, err = c.Request().Cookie(options.CookieName); err != nil {
 					// neither the header nor the cookie supplied a jwt token
-					return core.RedirectError{
+					return errors.RedirectError{
 						Status:  http.StatusUnauthorized,
 						Err:     fmt.Errorf("invalid authentication, no JWT token present"),
 						Request: c.Request(),
@@ -45,17 +45,14 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 			u := cache.Get(token)
 			if u != nil {
 				// cache hit, put the user in the context
-				log.Debug("Cache HIT!")
 				sc := &ServerContext{Context: c, Identity: *u}
 				return next(sc)
 			}
 
-			log.Debug("Cache MISS!")
-
-			var payload JwtTokenPayload
-			if payload, err = ParseJwtToken(token, options.JwtSecret, options.JwtIssuer); err != nil {
+			var payload sec.JwtTokenPayload
+			if payload, err = sec.ParseJwtToken(token, options.JwtSecret, options.JwtIssuer); err != nil {
 				log.Warnf("Could not decode the JWT token payload: %s", err)
-				return core.RedirectError{
+				return errors.RedirectError{
 					Status:  http.StatusUnauthorized,
 					Err:     fmt.Errorf("invalid authentication, could not parse the JWT token: %v", err),
 					Request: c.Request(),
@@ -66,7 +63,7 @@ func JwtWithConfig(options JwtOptions) echo.MiddlewareFunc {
 			claim := options.RequiredClaim
 			if roles, err = sec.Authorize(sec.Claim{Name: claim.Name, URL: claim.URL, Roles: claim.Roles}, payload.Claims); err != nil {
 				log.Warnf("Insufficient permissions to access the resource: %s", err)
-				return core.RedirectError{
+				return errors.RedirectError{
 					Status:  http.StatusForbidden,
 					Err:     fmt.Errorf("Invalid authorization: %v", err),
 					Request: c.Request(),

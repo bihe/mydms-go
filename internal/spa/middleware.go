@@ -1,16 +1,17 @@
-package core
+package spa
 
 import (
 	"net/http"
 	"strings"
 
+	"github.com/bihe/mydms/internal"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/labstack/echo/v4"
 )
 
-// SpaConfig defines settings for the middleware
-type SpaConfig struct {
+// Config defines settings for the middleware
+type Config struct {
 	// Paths defines which URL paths should be handeled
 	Paths []string
 	// FilePath defines the filesystem path for index.html
@@ -19,9 +20,9 @@ type SpaConfig struct {
 	RedirectEmptyPath bool
 }
 
-// SpaWithConfig has the main purpose to return the contents of index.html for all
+// WithConfig has the main purpose to return the contents of index.html for all
 // paths which return a 404, are requested to be HTML and defined by the configuration
-func SpaWithConfig(config SpaConfig) echo.MiddlewareFunc {
+func WithConfig(config Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			err = next(c)
@@ -30,7 +31,7 @@ func SpaWithConfig(config SpaConfig) echo.MiddlewareFunc {
 	}
 }
 
-func processSpaPath(config SpaConfig, c echo.Context, err error) error {
+func processSpaPath(config Config, c echo.Context, err error) error {
 	if err != nil && isHTMLContent(c) && isSpaPath(config, c.Path()) {
 		log.Debugf("got path '%s'", c.Path())
 		if eErr, ok := err.(*echo.HTTPError); ok {
@@ -44,10 +45,10 @@ func processSpaPath(config SpaConfig, c echo.Context, err error) error {
 }
 
 func isHTMLContent(c echo.Context) bool {
-	return negotiateContent(c) == HTML
+	return internal.NegotiateContent(c) == internal.HTML
 }
 
-func isSpaPath(config SpaConfig, path string) bool {
+func isSpaPath(config Config, path string) bool {
 	if path == "" && config.RedirectEmptyPath {
 		return true
 	}

@@ -15,7 +15,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bihe/mydms/features/upload"
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"

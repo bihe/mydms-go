@@ -10,11 +10,11 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/bihe/mydms/core"
+	"github.com/bihe/mydms/internal/config"
 )
 
 // InitLogger performs a setup for the logging mechanism
-func InitLogger(conf core.LogConfig, e *echo.Echo) {
+func InitLogger(conf config.LogConfig, e *echo.Echo) {
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: true,
 		FullTimestamp: true,

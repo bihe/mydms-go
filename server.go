@@ -8,9 +8,12 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/bihe/mydms/core"
-	"github.com/bihe/mydms/persistence"
-	"github.com/bihe/mydms/security"
+	"github.com/bihe/mydms/internal"
+	"github.com/bihe/mydms/internal/config"
+	"github.com/bihe/mydms/internal/errors"
+	"github.com/bihe/mydms/internal/persistence"
+	"github.com/bihe/mydms/internal/security"
+	"github.com/bihe/mydms/internal/spa"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -74,14 +77,14 @@ func parseFlags() *ServerArgs {
 	return c
 }
 
-func configFromFile(configFileName string) core.Configuration {
+func configFromFile(configFileName string) config.AppConfig {
 	f, err := os.Open(configFileName)
 	if err != nil {
 		panic(fmt.Sprintf("Could not open specific config file '%s': %v", configFileName, err))
 	}
 	defer f.Close()
 
-	c, err := core.GetSettings(f)
+	c, err := config.GetSettings(f)
 	if err != nil {
 		panic(fmt.Sprintf("Could not get server config values from file '%s': %v", configFileName, err))
 	}
@@ -94,7 +97,7 @@ func setupAPIServer() (*echo.Echo, string) {
 
 	e := echo.New()
 	e.HideBanner = true
-	e.HTTPErrorHandler = core.CustomErrorHandler
+	e.HTTPErrorHandler = errors.CustomErrorHandler
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
 
@@ -113,7 +116,7 @@ func setupAPIServer() (*echo.Echo, string) {
 		RedirectURL:   c.Sec.LoginRedirect,
 		CacheDuration: c.Sec.CacheDuration,
 	}))
-	e.Use(core.SpaWithConfig(core.SpaConfig{
+	e.Use(spa.WithConfig(spa.Config{
 		Paths:             []string{"/" + c.FS.URL},
 		FilePath:          c.FS.Path + "/" + c.FS.SpaIndexFile,
 		RedirectEmptyPath: true,
@@ -122,7 +125,7 @@ func setupAPIServer() (*echo.Echo, string) {
 
 	// persistence store && application version
 	con := persistence.NewConn(c.DB.ConnStr)
-	version := core.VersionInfo{
+	version := internal.VersionInfo{
 		Version: Version,
 		Build:   Build,
 	}

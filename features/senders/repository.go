@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 )
 
 // SenderEntity is the originator of a document

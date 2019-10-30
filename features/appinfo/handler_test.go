@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/bihe/mydms/core"
-	"github.com/bihe/mydms/security"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 
 	sec "github.com/bihe/commons-go/security"
+	"github.com/bihe/mydms/internal"
+	"github.com/bihe/mydms/internal/security"
 )
 
 func TestGetAppInfo(t *testing.T) {
@@ -29,7 +29,7 @@ func TestGetAppInfo(t *testing.T) {
 		Authenticated: true,
 	}
 	sc := &security.ServerContext{Context: c, Identity: u}
-	v := core.VersionInfo{
+	v := internal.VersionInfo{
 		Build:   "1",
 		Version: "2",
 	}

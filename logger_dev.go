@@ -5,15 +5,14 @@ package main
 import (
 	"os"
 
+	"github.com/bihe/mydms/internal/config"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/bihe/mydms/core"
 )
 
 // InitLogger performs a setup for the logging mechanism
-func InitLogger(conf core.LogConfig, e *echo.Echo) {
+func InitLogger(conf config.LogConfig, e *echo.Echo) {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
 

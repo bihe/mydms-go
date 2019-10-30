@@ -1,4 +1,4 @@
-package core
+package config
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 )
 
-// Configuration holds the application configuration
-type Configuration struct {
+// AppConfig holds the application configuration
+type AppConfig struct {
 	Sec   Security     `json:"security"`
 	DB    Database     `json:"database"`
 	Log   LogConfig    `json:"logging"`
@@ -70,9 +70,9 @@ type FileStore struct {
 }
 
 // GetSettings returns application configuration values
-func GetSettings(r io.Reader) (*Configuration, error) {
+func GetSettings(r io.Reader) (*AppConfig, error) {
 	var (
-		c    Configuration
+		c    AppConfig
 		cont []byte
 		err  error
 	)

@@ -1,4 +1,4 @@
-package core
+package errors
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/bihe/mydms/internal"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -99,27 +100,27 @@ func TestContentNegotiation(t *testing.T) {
 	tests := []struct {
 		name   string
 		header string
-		want   content
+		want   internal.Content
 	}{{
 		name:   "empty",
 		header: "",
-		want:   JSON,
+		want:   internal.JSON,
 	}, {
 		name:   "html",
 		header: "text/html",
-		want:   HTML,
+		want:   internal.HTML,
 	}, {
 		name:   "json",
 		header: "application/json",
-		want:   JSON,
+		want:   internal.JSON,
 	}, {
 		name:   "text",
 		header: "text/plain",
-		want:   TEXT,
+		want:   internal.TEXT,
 	}, {
 		name:   "complext",
 		header: "text/plain; q=0.5, application/json, text/x-dvi; q=0.8, text/x-c",
-		want:   JSON,
+		want:   internal.JSON,
 	}}
 
 	e := echo.New()
@@ -129,7 +130,7 @@ func TestContentNegotiation(t *testing.T) {
 			req.Header.Set(echo.HeaderAccept, test.header)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			content := negotiateContent(c)
+			content := internal.NegotiateContent(c)
 
 			if content != test.want {
 				t.Errorf("Unexpected value\ngot:  %+v\nwant: %+v", content, test.want)

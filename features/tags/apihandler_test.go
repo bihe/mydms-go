@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )

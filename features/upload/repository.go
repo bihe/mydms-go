@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/persistence"
 )
 
 // Upload defines an entity within the persistence store

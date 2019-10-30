@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bihe/mydms/core"
 	"github.com/bihe/mydms/features/filestore"
 	"github.com/bihe/mydms/features/senders"
 	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
-	"github.com/bihe/mydms/persistence"
+	"github.com/bihe/mydms/internal/errors"
+	"github.com/bihe/mydms/internal/persistence"
 	"github.com/labstack/echo/v4"
 	"github.com/microcosm-cc/bluemonday"
 	log "github.com/sirupsen/logrus"
@@ -165,10 +165,10 @@ func NewHandler(repos Repositories, fs filestore.FileService, config upload.Conf
 // @Tags documents
 // @Param id path string true "document ID"
 // @Success 200 {object} documents.Document
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 404 {object} core.ProblemDetail
-// @Failure 500 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 404 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
 // @Router /api/v1/documents/{id} [get]
 func (h *Handler) GetDocumentByID(c echo.Context) error {
 	var (
@@ -177,7 +177,7 @@ func (h *Handler) GetDocumentByID(c echo.Context) error {
 	)
 	id := c.Param("id")
 	if d, err = h.docRepo.Get(id); err != nil {
-		return core.NotFoundError{Err: err, Request: c.Request()}
+		return errors.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	return c.JSON(http.StatusOK, convert(h.policy, d))
@@ -189,9 +189,9 @@ func (h *Handler) GetDocumentByID(c echo.Context) error {
 // @Tags documents
 // @Param id path string true "document ID"
 // @Success 200 {object} documents.Result
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 500 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
 // @Router /api/v1/documents/{id} [delete]
 func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 	id := c.Param("id")
@@ -210,14 +210,14 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 	if err != nil {
 		log.Warnf("the document '%s' is not available, %v", id, err)
 		err = fmt.Errorf("document '%s' not available", id)
-		return core.NotFoundError{Err: err, Request: c.Request()}
+		return errors.NotFoundError{Err: err, Request: c.Request()}
 	}
 
 	err = h.docRepo.Delete(id, atomic)
 	if err != nil {
 		log.Warnf("error during delete operation of '%s', %v", id, err)
 		err = fmt.Errorf("could not delete '%s', %v", id, err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	// also remove the file payload stored in the backend store
@@ -225,7 +225,7 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 	if err != nil {
 		log.Errorf("could not delete file in backend store '%s', %v", fileName, err)
 		err = fmt.Errorf("could not delete '%s', %v", id, err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	return c.JSON(http.StatusOK, Result{
@@ -246,9 +246,9 @@ func (h *Handler) DeleteDocumentByID(c echo.Context) (err error) {
 // @Param limit query int false "limit max results"
 // @Param skip query int false "skip N results"
 // @Success 200 {object} documents.PagedDcoument
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 500 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
 // @Router /api/v1/documents/search [get]
 func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 	var (
@@ -287,7 +287,7 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 	if err != nil {
 		log.Warnf("could not search for documents, %v", err)
 		err = fmt.Errorf("error searching documents, %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	pDoc := PagedDcoument{
@@ -306,9 +306,9 @@ func (h *Handler) SearchDocuments(c echo.Context) (err error) {
 // @Produce  json
 // @Param document body documents.Document true "document payload"
 // @Success 200 {object} documents.Result
-// @Failure 401 {object} core.ProblemDetail
-// @Failure 403 {object} core.ProblemDetail
-// @Failure 500 {object} core.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
 // @Router /api/v1/documents [post]
 func (h *Handler) SaveDocument(c echo.Context) (err error) {
 	atomic, err := h.startAtomic(c)
@@ -325,7 +325,7 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 	if err = c.Bind(d); err != nil {
 		log.Warnf("could not bind supplied payload, %v", err)
 		err = fmt.Errorf("could not bind supplied data: %v", err)
-		return core.BadRequestError{Err: err, Request: c.Request()}
+		return errors.BadRequestError{Err: err, Request: c.Request()}
 	}
 
 	d = sanitize(h.policy, d)
@@ -334,21 +334,21 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 	if err != nil {
 		log.Warnf("could not process the uploaded file, %v", err)
 		err = fmt.Errorf("upload-file error: %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	tagIds, tagList, err := h.processTags(d.Tags, atomic)
 	if err != nil {
 		log.Warnf("could not process the supplied tags, %v", err)
 		err = fmt.Errorf("tag error: %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	senderIds, senderList, err := h.processSenders(d.Senders, atomic)
 	if err != nil {
 		log.Warnf("could not process the supplied senders, %v", err)
 		err = fmt.Errorf("senders error: %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	var doc DocumentEntity
@@ -377,14 +377,14 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 	if err != nil {
 		log.Errorf("could not save document: %v", err)
 		err = fmt.Errorf("error while saving document: %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	err = h.docRepo.SaveReferences(doc.ID, tagIds, senderIds, atomic)
 	if err != nil {
 		log.Errorf("failed to save tags/senders references: %v", err)
 		err = fmt.Errorf("error while saving references: %v", err)
-		return core.ServerError{Err: err, Request: c.Request()}
+		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
 	var r Result
@@ -513,7 +513,7 @@ func (h *Handler) startAtomic(c echo.Context) (persistence.Atomic, error) {
 	if err != nil {
 		log.Errorf("failed to start transaction: %v", err)
 		err = fmt.Errorf("could not start atomic operation: %v", err)
-		return persistence.Atomic{}, core.ServerError{Err: err, Request: c.Request()}
+		return persistence.Atomic{}, errors.ServerError{Err: err, Request: c.Request()}
 	}
 	return atomic, nil
 }

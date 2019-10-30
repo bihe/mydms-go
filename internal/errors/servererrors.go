@@ -1,22 +1,11 @@
-package core
+package errors
 
 import (
 	"fmt"
 	"net/http"
 
+	"github.com/bihe/mydms/internal"
 	"github.com/labstack/echo/v4"
-	"github.com/markusthoemmes/goautoneg"
-)
-
-type content int
-
-const (
-	// TEXT content-type requested by client
-	TEXT content = iota
-	// JSON content-type requested by client
-	JSON
-	// HTML content-type requested by cleint
-	HTML
 )
 
 // --------------------------------------------------------------------------
@@ -145,7 +134,7 @@ func CustomErrorHandler(err error, c echo.Context) {
 	// decide based on error-type what to do
 	// the basic distinction is just between a browser request (requesting HTML)
 	// and API usage, where JSON is returned
-	content := negotiateContent(c)
+	content := internal.NegotiateContent(c)
 
 	if notfound, ok := err.(NotFoundError); ok {
 		e = ErrNotFound(notfound)
@@ -162,7 +151,7 @@ func CustomErrorHandler(err error, c echo.Context) {
 	if redirect, ok := err.(RedirectError); ok {
 		e = ErrRedirectError(redirect)
 		switch content {
-		case HTML:
+		case internal.HTML:
 			c.Redirect(http.StatusTemporaryRedirect, redirect.URL)
 			break
 		default:
@@ -180,28 +169,4 @@ func CustomErrorHandler(err error, c echo.Context) {
 	// any other case we just print an internal server error
 	e = ErrServerError(ServerError{Err: err, Request: c.Request()})
 	c.JSON(e.Status, e)
-}
-
-func negotiateContent(c echo.Context) content {
-	header := c.Request().Header.Get("Accept")
-	if header == "" {
-		return JSON // default
-	}
-
-	accept := goautoneg.ParseAccept(header)
-	if len(accept) == 0 {
-		return JSON // default
-	}
-
-	// use the first element, because this has the highest priority
-	switch accept[0].SubType {
-	case "html":
-		return HTML
-	case "json":
-		return JSON
-	case "plain":
-		return TEXT
-	default:
-		return JSON
-	}
 }

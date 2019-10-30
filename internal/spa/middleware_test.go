@@ -1,4 +1,4 @@
-package core
+package spa
 
 import (
 	"io/ioutil"
@@ -34,13 +34,13 @@ func TestJwtMiddleware(t *testing.T) {
 		os.Remove(filePath)
 	}()
 
-	config := SpaConfig{
+	config := Config{
 		Paths:             []string{"/ui", "/abc"},
 		FilePath:          filePath,
 		RedirectEmptyPath: true,
 	}
 
-	h := SpaWithConfig(config)(func(c echo.Context) error {
+	h := WithConfig(config)(func(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "404")
 	})
 	req.Header.Set("Accept", "text/html")
