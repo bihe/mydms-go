@@ -105,20 +105,6 @@ definitions:
           dereferenced, it provide human-readable documentation for the problem
         type: string
     type: object
-  senders.Sender:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
-  tags.Tag:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
   upload.Result:
     properties:
       message:
@@ -252,6 +238,47 @@ paths:
       summary: get a document by id
       tags:
       - documents
+  /api/v1/documents/{type}/search:
+    get:
+      consumes:
+      - application/json
+      description: search either by tags or senders with the supplied search term
+      parameters:
+      - description: search type tags || senders
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: search term
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/documents.Result'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ProblemDetail'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ProblemDetail'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.ProblemDetail'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetail'
+      summary: search for tags/senders
+      tags:
+      - documents
   /api/v1/documents/search:
     get:
       description: use filters to search for docments. the result is a paged set
@@ -344,126 +371,6 @@ paths:
       summary: get a file from the backend store
       tags:
       - filestore
-  /api/v1/senders:
-    get:
-      description: returns all available senders in alphabetical order
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/senders.Sender'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-      summary: retrieve all senders
-      tags:
-      - senders
-  /api/v1/senders/search:
-    get:
-      description: returns all senders which match a given search-term
-      parameters:
-      - description: SearchString
-        in: query
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/senders.Sender'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-      summary: search for senders
-      tags:
-      - senders
-  /api/v1/tags:
-    get:
-      description: returns all available tags in alphabetical order
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/tags.Tag'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-      summary: retrieve all tags
-      tags:
-      - tags
-  /api/v1/tags/search:
-    get:
-      description: returns all tags which match a given search-term
-      parameters:
-      - description: SearchString
-        in: query
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/tags.Tag'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/errors.ProblemDetail'
-      summary: search for tags
-      tags:
-      - tags
   /api/v1/uploads/file:
     post:
       description: temporarily stores a file and creates a item in the repository

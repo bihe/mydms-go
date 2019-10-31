@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/bihe/mydms/features/filestore"
-	"github.com/bihe/mydms/features/senders"
-	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
 	"github.com/bihe/mydms/internal/persistence"
 )
@@ -17,6 +15,8 @@ var errTx = fmt.Errorf("start transaction failed")
 // --------------------------------------------------------------------------
 // MOCK: documents.Repository
 // --------------------------------------------------------------------------
+
+var _ Repository = (*mockRepository)(nil)
 
 type mockRepository struct {
 	c         persistence.Connection
@@ -106,9 +106,11 @@ func (m *mockRepository) CreateAtomic() (persistence.Atomic, error) {
 	return m.c.CreateAtomic()
 }
 
-func (m *mockRepository) SaveReferences(id string, tagIds, senderIds []int, a persistence.Atomic) (err error) {
-	m.callCount++
-	return m.errMap[m.callCount]
+func (m *mockRepository) SearchLists(s string, st SearchType) ([]string, error) {
+	if m.fail {
+		return nil, Err
+	}
+	return []string{"one", "two"}, nil
 }
 
 // --------------------------------------------------------------------------
@@ -146,90 +148,6 @@ func (m *mockFileService) GetFile(filePath string) (filestore.FileItem, error) {
 func (m *mockFileService) DeleteFile(filePath string) error {
 	m.callCount++
 	return m.errMap[m.callCount]
-}
-
-// --------------------------------------------------------------------------
-// MOCK: tags.Repository
-// --------------------------------------------------------------------------
-
-type mockTagsRepository struct {
-	errMap    map[int]error
-	callCount int
-}
-
-func newTagRepo() *mockTagsRepository {
-	return &mockTagsRepository{
-		errMap: make(map[int]error),
-	}
-}
-
-// GetAllTags() ([]TagEntity, error)
-// SearchTags(s string) ([]TagEntity, error)
-// SaveTags(tags []string, a persistence.Atomic) (err error)
-// CreateTag(name string, a persistence.Atomic) (tag TagEntity, err error)
-// GetTagByName(name string) (TagEntity, error)
-
-func (m *mockTagsRepository) GetAllTags() ([]tags.TagEntity, error) {
-	m.callCount++
-	return nil, m.errMap[m.callCount]
-}
-func (m *mockTagsRepository) SearchTags(s string) ([]tags.TagEntity, error) {
-	m.callCount++
-	return nil, m.errMap[m.callCount]
-}
-func (m *mockTagsRepository) GetTagByName(name string) (tags.TagEntity, error) {
-	m.callCount++
-	return tags.TagEntity{}, m.errMap[m.callCount]
-}
-func (m *mockTagsRepository) SaveTags(tags []string, a persistence.Atomic) (err error) {
-	m.callCount++
-	return m.errMap[m.callCount]
-}
-func (m *mockTagsRepository) CreateTag(name string, a persistence.Atomic) (tag tags.TagEntity, err error) {
-	m.callCount++
-	return tags.TagEntity{}, m.errMap[m.callCount]
-}
-
-// --------------------------------------------------------------------------
-// MOCK: senders.Repository
-// --------------------------------------------------------------------------
-
-type mockSendersRepository struct {
-	errMap    map[int]error
-	callCount int
-}
-
-func newSenderRepo() *mockSendersRepository {
-	return &mockSendersRepository{
-		errMap: make(map[int]error),
-	}
-}
-
-// GetAllSenders() ([]SenderEntity, error)
-// SearchSenders(s string) ([]SenderEntity, error)
-// SaveSenders(senders []string, a persistence.Atomic) (err error)
-// CreateSender(name string, a persistence.Atomic) (sender SenderEntity, err error)
-// GetSenderByName(name string) (SenderEntity, error)
-
-func (m *mockSendersRepository) GetAllSenders() ([]senders.SenderEntity, error) {
-	m.callCount++
-	return nil, m.errMap[m.callCount]
-}
-func (m *mockSendersRepository) SearchSenders(s string) ([]senders.SenderEntity, error) {
-	m.callCount++
-	return nil, m.errMap[m.callCount]
-}
-func (m *mockSendersRepository) GetSenderByName(name string) (senders.SenderEntity, error) {
-	m.callCount++
-	return senders.SenderEntity{}, m.errMap[m.callCount]
-}
-func (m *mockSendersRepository) SaveSenders(senders []string, a persistence.Atomic) (err error) {
-	m.callCount++
-	return m.errMap[m.callCount]
-}
-func (m *mockSendersRepository) CreateSender(name string, a persistence.Atomic) (sender senders.SenderEntity, err error) {
-	m.callCount++
-	return senders.SenderEntity{}, m.errMap[m.callCount]
 }
 
 // --------------------------------------------------------------------------

@@ -4,8 +4,6 @@ import (
 	"github.com/bihe/mydms/features/appinfo"
 	"github.com/bihe/mydms/features/documents"
 	"github.com/bihe/mydms/features/filestore"
-	"github.com/bihe/mydms/features/senders"
-	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
 	"github.com/bihe/mydms/internal"
 	"github.com/bihe/mydms/internal/config"
@@ -16,21 +14,11 @@ import (
 // registerRoutes defines the routes of the available handlers
 func registerRoutes(e *echo.Echo, con persistence.Connection, config config.AppConfig, version internal.VersionInfo) (err error) {
 	var (
-		tr tags.Repository
-		sr senders.Repository
 		ur upload.Repository
 		dr documents.Repository
 	)
 
 	ur, err = upload.NewRepository(con)
-	if err != nil {
-		return
-	}
-	tr, err = tags.NewRepository(con)
-	if err != nil {
-		return
-	}
-	sr, err = senders.NewRepository(con)
 	if err != nil {
 		return
 	}
@@ -46,18 +34,6 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config config.AppC
 	ai := api.Group("/appinfo")
 	aih := &appinfo.Handler{VersionInfo: version}
 	ai.GET("", aih.GetAppInfo)
-
-	// tags
-	t := api.Group("/tags")
-	th := &tags.Handler{R: tr}
-	t.GET("", th.GetAllTags)
-	t.GET("/search", th.SearchForTags)
-
-	// senders
-	s := api.Group("/senders")
-	sh := &senders.Handler{R: sr}
-	s.GET("", sh.GetAllSenders)
-	s.GET("/search", sh.SearchForSenders)
 
 	// upload
 	u := api.Group("/upload")
@@ -85,10 +61,10 @@ func registerRoutes(e *echo.Echo, con persistence.Connection, config config.AppC
 	d := api.Group("/documents")
 	dh := documents.NewHandler(documents.Repositories{
 		DocRepo:    dr,
-		TagRepo:    tr,
-		SenderRepo: sr,
 		UploadRepo: ur,
 	}, storeSvc, uploadConfig)
+
+	d.GET("/:type/search", dh.SearchList)
 	d.GET("/:id", dh.GetDocumentByID)
 	d.DELETE("/:id", dh.DeleteDocumentByID)
 	d.GET("/search", dh.SearchDocuments)

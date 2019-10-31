@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/bihe/mydms/features/filestore"
-	"github.com/bihe/mydms/features/senders"
-	"github.com/bihe/mydms/features/tags"
 	"github.com/bihe/mydms/features/upload"
 	"github.com/bihe/mydms/internal/errors"
 	"github.com/bihe/mydms/internal/persistence"
@@ -50,6 +48,12 @@ type Document struct {
 type PagedDcoument struct {
 	Documents    []Document `json:"documents"`
 	TotalEntries int        `json:"totalEntries"`
+}
+
+// SearchResult is used for all string-search operations
+type SearchResult struct {
+	Result []string `json:"result"`
+	Length int      `json:"length"`
 }
 
 // ActionResult is a code specifying a specific outcome/result
@@ -129,8 +133,6 @@ type Result struct {
 // Handler provides handler methods for documents
 type Handler struct {
 	docRepo    Repository
-	tagRepo    tags.Repository
-	senderRepo senders.Repository
 	uploadRepo upload.Repository
 	r          Repositories
 	fs         filestore.FileService
@@ -141,8 +143,6 @@ type Handler struct {
 // Repositories combines necessary repositories for the document handler
 type Repositories struct {
 	DocRepo    Repository
-	TagRepo    tags.Repository
-	SenderRepo senders.Repository
 	UploadRepo upload.Repository
 }
 
@@ -150,8 +150,6 @@ type Repositories struct {
 func NewHandler(repos Repositories, fs filestore.FileService, config upload.Config) *Handler {
 	return &Handler{
 		docRepo:    repos.DocRepo,
-		tagRepo:    repos.TagRepo,
-		senderRepo: repos.SenderRepo,
 		uploadRepo: repos.UploadRepo,
 		fs:         fs,
 		uc:         config,
@@ -337,19 +335,8 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
-	tagIds, tagList, err := h.processTags(d.Tags, atomic)
-	if err != nil {
-		log.Warnf("could not process the supplied tags, %v", err)
-		err = fmt.Errorf("tag error: %v", err)
-		return errors.ServerError{Err: err, Request: c.Request()}
-	}
-
-	senderIds, senderList, err := h.processSenders(d.Senders, atomic)
-	if err != nil {
-		log.Warnf("could not process the supplied senders, %v", err)
-		err = fmt.Errorf("senders error: %v", err)
-		return errors.ServerError{Err: err, Request: c.Request()}
-	}
+	tagList := strings.Join(d.Tags, ";")
+	senderList := strings.Join(d.Senders, ";")
 
 	var doc DocumentEntity
 	newDoc := true
@@ -380,13 +367,6 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 		return errors.ServerError{Err: err, Request: c.Request()}
 	}
 
-	err = h.docRepo.SaveReferences(doc.ID, tagIds, senderIds, atomic)
-	if err != nil {
-		log.Errorf("failed to save tags/senders references: %v", err)
-		err = fmt.Errorf("error while saving references: %v", err)
-		return errors.ServerError{Err: err, Request: c.Request()}
-	}
-
 	var r Result
 	var code int
 	if newDoc {
@@ -403,6 +383,49 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 		code = http.StatusOK
 	}
 	c.JSON(code, r)
+	return
+}
+
+// SearchList godoc
+// @Summary search for tags/senders
+// @Description search either by tags or senders with the supplied search term
+// @Tags documents
+// @Accept  json
+// @Produce  json
+// @Param type path string true "search type tags || senders"
+// @Param name query string false "search term"
+// @Success 200 {object} documents.Result
+// @Failure 400 {object} errors.ProblemDetail
+// @Failure 401 {object} errors.ProblemDetail
+// @Failure 403 {object} errors.ProblemDetail
+// @Failure 500 {object} errors.ProblemDetail
+// @Router /api/v1/documents/{type}/search [get]
+func (h *Handler) SearchList(c echo.Context) (err error) {
+	name := c.QueryParam("name")
+	searchType := c.Param("type")
+	st := TAGS
+
+	if strings.ToLower(searchType) == "senders" {
+		st = SENDERS
+	} else if strings.ToLower(searchType) == "tags" {
+		st = TAGS
+	} else {
+		log.Warnf("wrong search-type supplied in URL")
+		return errors.BadRequestError{Err: fmt.Errorf("wrong search-type supplied in URL"), Request: c.Request()}
+	}
+
+	result, err := h.docRepo.SearchLists(name, st)
+	if err != nil {
+		log.Warnf("could not search for tags, %v", err)
+		err = fmt.Errorf("error search for tags: %v", err)
+		return errors.ServerError{Err: err, Request: c.Request()}
+	}
+	s := SearchResult{Result: make([]string, 0), Length: 0}
+	if result != nil {
+		s.Result = result
+		s.Length = len(result)
+	}
+	c.JSON(http.StatusOK, s)
 	return
 }
 
@@ -460,52 +483,6 @@ func (h *Handler) procssUploadFile(token, fileName string, atomic persistence.At
 	}
 
 	return fmt.Sprintf("/%s/%s", folder, fileName), nil
-}
-
-func (h *Handler) processTags(tList []string, atomic persistence.Atomic) ([]int, string, error) {
-	var tagList []int
-	var stringList string
-	for _, t := range tList {
-		if stringList != "" {
-			stringList += ";"
-		}
-		tag, err := h.tagRepo.GetTagByName(t)
-		if err != nil {
-			log.Warnf("could not find tag '%s', %v", t, err)
-			if tag, err = h.tagRepo.CreateTag(t, atomic); err != nil {
-				return nil, "", err
-			}
-			tagList = append(tagList, tag.ID)
-			stringList += t
-		} else {
-			tagList = append(tagList, tag.ID)
-			stringList += tag.Name
-		}
-	}
-	return tagList, stringList, nil
-}
-
-func (h *Handler) processSenders(sList []string, atomic persistence.Atomic) ([]int, string, error) {
-	var senderList []int
-	var stringList string
-	for _, s := range sList {
-		if stringList != "" {
-			stringList += ";"
-		}
-		sender, err := h.senderRepo.GetSenderByName(s)
-		if err != nil {
-			log.Warnf("could not find sender '%s', %v", s, err)
-			if sender, err = h.senderRepo.CreateSender(s, atomic); err != nil {
-				return nil, "", err
-			}
-			senderList = append(senderList, sender.ID)
-			stringList += s
-		} else {
-			senderList = append(senderList, sender.ID)
-			stringList += sender.Name
-		}
-	}
-	return senderList, stringList, nil
 }
 
 func (h *Handler) startAtomic(c echo.Context) (persistence.Atomic, error) {

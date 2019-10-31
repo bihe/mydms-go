@@ -335,14 +335,10 @@ func TestSaveUpdateDocument(t *testing.T) {
 	c := e.NewContext(req, rec)
 
 	docRepo := newDocRepo(con)
-	tagRepo := newTagRepo()
-	senderRepo := newSenderRepo()
 	uploadRepo := newUploadRepo()
 	svc := newFileService()
 	repos := Repositories{
 		DocRepo:    docRepo,
-		TagRepo:    tagRepo,
-		SenderRepo: senderRepo,
 		UploadRepo: uploadRepo,
 	}
 	h := NewHandler(repos, svc, uploadConfig)
@@ -388,53 +384,6 @@ func TestSaveUpdateDocument(t *testing.T) {
 	h = NewHandler(repos, svc, uploadConfig)
 	mock.ExpectBegin()
 	mock.ExpectRollback()
-	err = h.SaveDocument(c)
-	if err == nil {
-		t.Errorf(errExp)
-	}
-
-	// error save references
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	docRepo.callCount = 0
-	delete(docRepo.errMap, 3)
-	docRepo.errMap[4] = errRaise
-	h = NewHandler(repos, svc, uploadConfig)
-	mock.ExpectBegin()
-	mock.ExpectRollback()
-	err = h.SaveDocument(c)
-	if err == nil {
-		t.Errorf(errExp)
-	}
-
-	// error processtags1
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	mock.ExpectBegin()
-	mock.ExpectCommit()
-	tagRepo.callCount = 0
-	tagRepo.errMap[1] = errRaise
-	h = NewHandler(repos, svc, uploadConfig)
-	err = h.SaveDocument(c)
-	if err != nil {
-		t.Errorf(couldNotSave, err)
-	}
-
-	// error processtags2
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	mock.ExpectBegin()
-	mock.ExpectRollback()
-	tagRepo.callCount = 0
-	tagRepo.errMap[1] = errRaise
-	tagRepo.errMap[2] = errRaise
-	h = NewHandler(repos, svc, uploadConfig)
 	err = h.SaveDocument(c)
 	if err == nil {
 		t.Errorf(errExp)
@@ -489,14 +438,10 @@ func TestSaveNewDocument(t *testing.T) {
 	c := e.NewContext(req, rec)
 
 	docRepo := newDocRepo(con)
-	tagRepo := newTagRepo()
-	senderRepo := newSenderRepo()
 	uploadRepo := newUploadRepo()
 	svc := newFileService()
 	repos := Repositories{
 		DocRepo:    docRepo,
-		TagRepo:    tagRepo,
-		SenderRepo: senderRepo,
 		UploadRepo: uploadRepo,
 	}
 
@@ -529,39 +474,6 @@ func TestSaveNewDocument(t *testing.T) {
 	}
 	assert.Equal(t, Created, result.Result)
 
-	// error processsenders1
-	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	mock.ExpectBegin()
-	mock.ExpectCommit()
-	senderRepo.callCount = 0
-	senderRepo.errMap[1] = doError
-	h = NewHandler(repos, svc, uploadConfig)
-	err = h.SaveDocument(c)
-	if err != nil {
-		t.Errorf(couldNotSave, err)
-	}
-
-	// error processsenders2
-	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	mock.ExpectBegin()
-	mock.ExpectRollback()
-	senderRepo.callCount = 0
-	senderRepo.errMap[1] = doError
-	senderRepo.errMap[2] = doError
-	h = NewHandler(repos, svc, uploadConfig)
-	err = h.SaveDocument(c)
-	if err == nil {
-		t.Errorf(errExp)
-	}
-
 	// error processUploadFile
 	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
 	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
@@ -572,9 +484,6 @@ func TestSaveNewDocument(t *testing.T) {
 	mock.ExpectRollback()
 	uploadRepo.callCount = 0
 	uploadRepo.errMap[1] = doError
-	senderRepo.callCount = 0
-	delete(senderRepo.errMap, 1)
-	delete(senderRepo.errMap, 2)
 	h = NewHandler(repos, svc, uploadConfig)
 	err = h.SaveDocument(c)
 	if err == nil {
@@ -635,6 +544,94 @@ func TestSaveNewDocument(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf(expectations, err)
 	}
+}
+
+func TestSearchList(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	req := httptest.NewRequest(http.MethodGet, "/?name=search", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	c.SetParamNames("type")
+	c.SetParamValues("tags")
+
+	mdr := &mockRepository{}
+	svc := &mockFileService{}
+
+	repos := Repositories{
+		DocRepo: mdr,
+	}
+	h := NewHandler(repos, svc, uploadConfig)
+
+	var result SearchResult
+
+	// success
+	err := h.SearchList(c)
+	if err != nil {
+		t.Errorf("cannot search for lists: %v", err)
+	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	err = json.Unmarshal(rec.Body.Bytes(), &result)
+	if err != nil {
+		t.Errorf(errorUnmarshal, err)
+	}
+	assert.Equal(t, 2, result.Length)
+	assert.Equal(t, 2, len(result.Result))
+
+	// senders
+	req = httptest.NewRequest(http.MethodGet, "/?name=search", nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	c.SetParamNames("type")
+	c.SetParamValues("senders")
+
+	err = h.SearchList(c)
+	if err != nil {
+		t.Errorf("cannot search for lists: %v", err)
+	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	err = json.Unmarshal(rec.Body.Bytes(), &result)
+	if err != nil {
+		t.Errorf(errorUnmarshal, err)
+	}
+	assert.Equal(t, 2, result.Length)
+	assert.Equal(t, 2, len(result.Result))
+
+	// wrong search-type
+	req = httptest.NewRequest(http.MethodGet, "/?name=search", nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	c.SetParamNames("type")
+	c.SetParamValues("something")
+
+	err = h.SearchList(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
+	// error result
+	mdr.fail = true
+	repos = Repositories{
+		DocRepo: mdr,
+	}
+	h = NewHandler(repos, svc, uploadConfig)
+	req = httptest.NewRequest(http.MethodGet, "/?name=search", nil)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	c.SetParamNames("type")
+	c.SetParamValues("tags")
+
+	err = h.SearchList(c)
+	if err == nil {
+		t.Errorf(errExp)
+	}
+
 }
 
 func getTempPath() string {

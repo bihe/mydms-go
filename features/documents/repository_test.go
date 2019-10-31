@@ -226,97 +226,6 @@ func TestSaveError(t *testing.T) {
 	}
 }
 
-func TestSaveReferences(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf(fatalErr, err)
-	}
-	defer db.Close()
-
-	dbx := sqlx.NewDb(db, "mysql")
-	c := persistence.NewFromDB(dbx)
-	rw := dbRepository{c}
-
-	docID := "document1"
-	errInsert := "error was not expected while inserting item: %v"
-
-	stmtDeleteTags := "DELETE FROM DOCUMENTS_TO_TAGS"
-	stmtDeleteSenders := "DELETE FROM DOCUMENTS_TO_SENDERS"
-	stmtInsertTags := "INSERT INTO DOCUMENTS_TO_TAGS"
-	stmtInsertSenders := "INSERT INTO DOCUMENTS_TO_SENDERS"
-
-	// straight success
-	mock.ExpectBegin()
-	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertSenders).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
-	if err != nil {
-		t.Errorf(errInsert, err)
-	}
-
-	// delete1
-	mock.ExpectBegin()
-	mock.ExpectExec(stmtDeleteTags).WillReturnError(Err)
-	mock.ExpectRollback()
-	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
-	if err == nil {
-		t.Errorf(expectedErr)
-	}
-
-	// delete2
-	mock.ExpectBegin()
-	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtDeleteSenders).WillReturnError(Err)
-	mock.ExpectRollback()
-	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
-	if err == nil {
-		t.Errorf(expectedErr)
-	}
-
-	// insert1
-	mock.ExpectBegin()
-	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertTags).WillReturnError(Err)
-	mock.ExpectRollback()
-	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
-	if err == nil {
-		t.Errorf(expectedErr)
-	}
-
-	// insert2
-	mock.ExpectBegin()
-	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertSenders).WillReturnError(Err)
-	mock.ExpectRollback()
-	err = rw.SaveReferences(docID, []int{1}, []int{1}, persistence.Atomic{})
-	if err == nil {
-		t.Errorf(expectedErr)
-	}
-
-	// externally supplied tx
-	mock.ExpectBegin()
-	mock.ExpectExec(stmtDeleteTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtDeleteSenders).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertTags).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec(stmtInsertSenders).WillReturnResult(sqlmock.NewResult(1, 1))
-	a, _ := c.CreateAtomic()
-	err = rw.SaveReferences(docID, []int{1}, []int{1}, a)
-	if err != nil {
-		t.Errorf(errInsert, err)
-	}
-
-	// we make sure that all expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf(expectations, err)
-	}
-}
-
 func TestRead(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -594,4 +503,77 @@ func TestSearch(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf(expectations, err)
 	}
+}
+
+func TestSearchLists(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf(fatalErr, err)
+	}
+	defer db.Close()
+
+	dbx := sqlx.NewDb(db, "mysql")
+	c := persistence.NewFromDB(dbx)
+	rw := dbRepository{c}
+	q := "SELECT distinct\\(taglist\\) as search FROM DOCUMENTS"
+	columns := []string{"search"}
+	searchErr := "error searching: %v"
+
+	// multiple
+	mock.ExpectQuery(q).WillReturnRows(sqlmock.NewRows(columns).AddRow("tag1").AddRow("tag2").AddRow("tag1;tag3"))
+	tags, err := rw.SearchLists("tag", TAGS)
+	if err != nil {
+		t.Errorf(searchErr, err)
+	}
+
+	if len(tags) != 3 {
+		t.Errorf("3 entries expected, got %d", len(tags))
+	}
+
+	if tags[0] != "tag1" || tags[1] != "tag2" || tags[2] != "tag3" {
+		t.Errorf("wrong tags returned from search")
+	}
+
+	// single
+	mock.ExpectQuery(q).WillReturnRows(sqlmock.NewRows(columns).AddRow("tag1").AddRow("tag2").AddRow("tag1;tag3"))
+	tags, err = rw.SearchLists("tag2", TAGS)
+	if err != nil {
+		t.Errorf(searchErr, err)
+	}
+
+	if len(tags) != 1 {
+		t.Errorf("1 entries expected, got %d", len(tags))
+	}
+
+	if tags[0] != "tag2" {
+		t.Errorf("wrong tags returned from search")
+	}
+
+	// error1
+	mock.ExpectQuery(q).WillReturnError(Err)
+	tags, err = rw.SearchLists("tag2", TAGS)
+	if err == nil {
+		t.Errorf(expectedErr)
+	}
+
+	// multiple
+	mock.ExpectQuery("SELECT distinct\\(senderlist\\) as search FROM DOCUMENTS").WillReturnRows(sqlmock.NewRows(columns).AddRow("sender1").AddRow("sender2").AddRow("sender1;sender3"))
+	senders, err := rw.SearchLists("sender", SENDERS)
+	if err != nil {
+		t.Errorf(searchErr, err)
+	}
+
+	if len(senders) != 3 {
+		t.Errorf("3 entries expected, got %d", len(senders))
+	}
+
+	if senders[0] != "sender1" || senders[1] != "sender2" || senders[2] != "sender3" {
+		t.Errorf("wrong senders returned from search")
+	}
+
+	// we make sure that all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf(expectations, err)
+	}
+
 }

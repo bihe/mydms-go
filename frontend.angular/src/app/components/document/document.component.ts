@@ -8,10 +8,8 @@ import { ConfirmationDialogComponent } from '../../shared/confirmation/confirmat
 import { ApplicationData } from '../../shared/models/application.data';
 import { AutoCompleteModel, TagType } from '../../shared/models/autocomplete.model';
 import { Document } from '../../shared/models/document.model';
-import { Sender } from '../../shared/models/sender.model';
-import { Tag } from '../../shared/models/tag.model';
-import { AppDataService } from '../../shared/services/app.data.service';
-import { ApplicationState } from '../../shared/services/app.state';
+import { BackendService } from '../../shared/services/backend.service';
+import { ApplicationState } from '../../shared/services/state.service';
 import { MessageUtils } from '../../shared/utils/message.utils';
 
 @Component({
@@ -23,11 +21,11 @@ export class DocumentComponent implements OnInit {
 
   isNewDocument = true;
   document: Document = new Document();
-  senders: Sender[] = [];
-  tags: Tag[] = [];
 
   selectedTags: any[] = [];
   selectedSenders: any[] = [];
+  senders: string[];
+  tags: string[];
 
   files: UploadFile[];
   uploadInput: EventEmitter<UploadInput>;
@@ -44,7 +42,7 @@ export class DocumentComponent implements OnInit {
   public A: ApplicationData;
 
   constructor(
-    private service: AppDataService,
+    private service: BackendService,
     private state: ApplicationState,
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
@@ -92,19 +90,11 @@ export class DocumentComponent implements OnInit {
             this.document = result;
 
             if (this.document.senders && this.document.senders.length > 0) {
-              this.senders = this.document.senders.map(a => {
-                const s = new Sender();
-                s.name = a;
-                return s;
-              });
+              this.senders = this.document.senders;
             }
 
             if (this.document.tags && this.document.tags.length > 0) {
-              this.tags = this.document.tags.map(a => {
-                const t = new Tag();
-                t.name = a;
-                return t;
-              });
+              this.tags = this.document.tags;
             }
             this.isNewDocument = false;
 
@@ -160,8 +150,8 @@ export class DocumentComponent implements OnInit {
 
       this.document.title = this.documentTitle;
       this.document.amount = this.documentAmount;
-      this.document.senders = this.senders.map(a => a.name);
-      this.document.tags = this.tags.map(a => a.name);
+      this.document.senders = this.senders;
+      this.document.tags = this.tags;
       this.document.uploadFileToken = this.uploadToken;
       this.document.fileName = this.uploadFileName;
 
@@ -266,17 +256,17 @@ export class DocumentComponent implements OnInit {
     }
   }
 
-  public searchForTags = (text: string): Observable<any[]> => {
+  public searchForTags = (text: string): Observable<AutoCompleteModel[]> => {
     return this.service.searchTags(text).pipe(map(a => {
       // change the type of the array to meet the 'expectations' of ngx-chips
-      return this.mapAutocomplete(a, TagType.Tag);
+      return this.mapAutocomplete(a.result, TagType.Tag);
     }));
   }
 
-  public searchForSenders = (text: string): Observable<any[]> => {
+  public searchForSenders = (text: string): Observable<AutoCompleteModel[]> => {
     return this.service.searchSenders(text).pipe(map(a => {
       // change the type of the array to meet the 'expectations' of ngx-chips
-      return this.mapAutocomplete(a, TagType.Sender);
+      return this.mapAutocomplete(a.result, TagType.Sender);
     }));
   }
 
@@ -294,16 +284,15 @@ export class DocumentComponent implements OnInit {
     return false;
   }
 
-  private mapAutocomplete(items: any[], type: TagType): AutoCompleteModel[] {
+  private mapAutocomplete(items: string[], type: TagType): AutoCompleteModel[] {
     const autocompletion: AutoCompleteModel[] = [];
     items.forEach(x => {
       const item = new AutoCompleteModel();
-      item.display = x.name;
-      item.value = x.id;
+      item.display = x;
+      item.value = x;
       item.type = type;
       autocompletion.push(item);
     });
-    // return autocompletion;
     return autocompletion;
   }
 
@@ -311,20 +300,14 @@ export class DocumentComponent implements OnInit {
     if (this.selectedSenders) {
       this.senders = [];
       this.selectedSenders.forEach(item => {
-        const sender = new Sender();
-        sender.name = item.display;
-        sender.id = +item.value ? item.value : -1;
-        this.senders.push(sender);
+        this.senders.push(item.display);
       });
     }
 
     if (this.selectedTags) {
       this.tags = [];
       this.selectedTags.forEach(item => {
-        const tag = new Tag();
-        tag.name = item.display;
-        tag.id = +item.value ? item.value : -1;
-        this.tags.push(tag);
+        this.tags.push(item.display);
       });
     }
   }
