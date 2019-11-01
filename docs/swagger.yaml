@@ -82,6 +82,15 @@ definitions:
       result:
         type: integer
     type: object
+  documents.SearchResult:
+    properties:
+      length:
+        type: integer
+      result:
+        items:
+          type: string
+        type: array
+    type: object
   errors.ProblemDetail:
     properties:
       detail:
@@ -259,7 +268,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/documents.Result'
+            $ref: '#/definitions/documents.SearchResult'
         "400":
           description: Bad Request
           schema:

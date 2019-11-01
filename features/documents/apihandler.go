@@ -394,7 +394,7 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 // @Produce  json
 // @Param type path string true "search type tags || senders"
 // @Param name query string false "search term"
-// @Success 200 {object} documents.Result
+// @Success 200 {object} documents.SearchResult
 // @Failure 400 {object} errors.ProblemDetail
 // @Failure 401 {object} errors.ProblemDetail
 // @Failure 403 {object} errors.ProblemDetail

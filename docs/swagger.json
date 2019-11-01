@@ -299,7 +299,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/documents.Result"
+                            "$ref": "#/definitions/documents.SearchResult"
                         }
                     },
                     "400": {
@@ -557,6 +557,20 @@
                 },
                 "result": {
                     "type": "integer"
+                }
+            }
+        },
+        "documents.SearchResult": {
+            "type": "object",
+            "properties": {
+                "length": {
+                    "type": "integer"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
