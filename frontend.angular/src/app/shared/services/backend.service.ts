@@ -6,17 +6,19 @@ import { AppInfo } from '../models/app.info';
 import { Document } from '../models/document.model';
 import { DocumentResult } from '../models/document.result.model';
 import { Result } from '../models/result.model';
-import { BaseService } from '../services/_base.service';
+import { SearchResult } from '../models/result.search';
+import { BaseService } from './_base.service';
 
 
 @Injectable()
-export class AppDataService extends BaseService {
+export class BackendService extends BaseService {
   private readonly SEARCH_DOCUMENTS: string = '/api/v1/documents/search';
   private readonly APP_INFO_URL: string = '/api/v1/appinfo';
-  private readonly SEARCH_SENDERS_URL: string = '/api/v1/senders/search';
-  private readonly SEARCH_TAGS_URL: string = '/api/v1/tags/search';
   private readonly SAVE_DOCUMENTS_URL: string = '/api/v1/documents/';
   private readonly LOAD_DOCUMENT_URL: string = '/api/v1/documents/%ID%';
+
+  private readonly SEARCH_SENDERS_URL: string = '/api/v1/documents/senders/search';
+  private readonly SEARCH_TAGS_URL: string = '/api/v1/documents/tags/search';
 
   constructor (private http: HttpClient) {
     super();
@@ -55,11 +57,11 @@ export class AppDataService extends BaseService {
       );
   }
 
-  searchSenders(name: string): Observable<any[]> {
+  searchSenders(name: string): Observable<SearchResult> {
     const searchUrl = 'name=%NAME%';
     const url = this.SEARCH_SENDERS_URL + '?' + searchUrl.replace('%NAME%', name || '');
 
-    return this.http.get<any[]>(url, this.RequestOptions)
+    return this.http.get<SearchResult>(url, this.RequestOptions)
       .pipe(
         distinctUntilChanged(),
         timeout(this.RequestTimeOutDefault),
@@ -67,11 +69,11 @@ export class AppDataService extends BaseService {
       );
   }
 
-  searchTags(name: string): Observable<any[]> {
+  searchTags(name: string): Observable<SearchResult> {
     const searchUrl = 'name=%NAME%';
     const url = this.SEARCH_TAGS_URL + '?' + searchUrl.replace('%NAME%', name || '');
 
-    return this.http.get<any[]>(url, this.RequestOptions)
+    return this.http.get<SearchResult>(url, this.RequestOptions)
       .pipe(
         distinctUntilChanged(),
         timeout(this.RequestTimeOutDefault),

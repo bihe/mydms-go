@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 
@@ -82,8 +83,11 @@ type Repository interface {
 	Save(doc DocumentEntity, a persistence.Atomic) (d DocumentEntity, err error)
 	Delete(id string, a persistence.Atomic) (err error)
 	Search(s DocSearch, order []OrderBy) (PagedDocuments, error)
-	SaveReferences(docID string, tagIds, senderIds []int, a persistence.Atomic) (err error)
+	SearchLists(s string, st SearchType) ([]string, error)
 }
+
+// compiler interface check
+var _ Repository = (*dbRepository)(nil)
 
 // NewRepository creates a new instance using an existing connection
 func NewRepository(c persistence.Connection) (Repository, error) {
@@ -287,50 +291,65 @@ func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, 
 	return PagedDocuments{Documents: docs, Count: c}, nil
 }
 
-// SaveReferences takes a list of tag-ids and sender-ids and stores the information
-// as references M:N within the database
-func (rw *dbRepository) SaveReferences(docID string, tagIds, senderIds []int, a persistence.Atomic) (err error) {
+// SearchType is used to determine if the search is performend on tags or senders
+type SearchType uint
+
+const (
+	// TAGS is used to search tags within the documents table
+	TAGS SearchType = iota
+	// SENDERS is used to search senders within the documents table
+	SENDERS
+)
+
+// SearchLists collects all tag-entries from all documents and returns those elements which start with
+// the given search term. The search is performed case insensitive
+func (rw *dbRepository) SearchLists(s string, st SearchType) ([]string, error) {
 	var (
-		atomic *persistence.Atomic
+		t      string
+		result []string
+		lookup map[string]int
+		found  []string
 	)
 
-	defer func() {
-		err = persistence.HandleTX(!a.Active, atomic, err)
-	}()
+	search := make(map[SearchType]string)
+	search[TAGS] = "taglist"
+	search[SENDERS] = "senderlist"
 
-	if atomic, err = persistence.CheckTX(rw.c, &a); err != nil {
-		return
-	}
+	query := "SELECT distinct(%s) as search FROM DOCUMENTS WHERE lower(%s) LIKE ?"
+	query = fmt.Sprintf(query, search[st], search[st])
 
-	// 1st clear old references
-	_, err = atomic.Exec("DELETE FROM DOCUMENTS_TO_TAGS WHERE document_id = ?", docID)
+	rows, err := rw.c.Queryx(query, "%"+strings.ToLower(s)+"%")
 	if err != nil {
-		err = fmt.Errorf("could not clear tag-references: %v", err)
-		return
+		err = fmt.Errorf("could not search for %s: %v", search[st], err)
+		return nil, err
 	}
-	_, err = atomic.Exec("DELETE FROM DOCUMENTS_TO_SENDERS WHERE document_id = ?", docID)
-	if err != nil {
-		err = fmt.Errorf("could not clear sender-references: %v", err)
-		return
-	}
+	defer rows.Close()
 
-	// 2nd setup new references
-	for _, id := range tagIds {
-		_, err = atomic.Exec("INSERT INTO DOCUMENTS_TO_TAGS (document_id, tag_id) VALUES (?,?)", docID, id)
-		if err != nil {
-			err = fmt.Errorf("could not save tag-reference: %v", err)
-			return
+	lookup = make(map[string]int)
+	for rows.Next() {
+		if err := rows.Scan(&t); err != nil {
+			err = fmt.Errorf("could not get row contents: %v", err)
+			return nil, err
 		}
-	}
-	for _, id := range senderIds {
-		_, err = atomic.Exec("INSERT INTO DOCUMENTS_TO_SENDERS (document_id, sender_id) VALUES (?,?)", docID, id)
-		if err != nil {
-			err = fmt.Errorf("could not save sender-reference: %v", err)
-			return
+		parts := strings.Split(t, ";")
+		for _, p := range parts {
+			if _, found := lookup[p]; !found && p != "" {
+				lookup[p] = 1
+				result = append(result, p)
+			}
 		}
 	}
 
-	return
+	// now we have collected all search-elements of all documents
+	// search for those which start with the given search term s
+	s = strings.ToLower(s)
+	for i := range result {
+		if strings.HasPrefix(strings.ToLower(result[i]), s) {
+			found = append(found, result[i])
+		}
+	}
+	sort.Strings(found)
+	return found, nil
 }
 
 func prepareQuery(c persistence.Connection, q string, args map[string]interface{}) (string, []interface{}, error) {

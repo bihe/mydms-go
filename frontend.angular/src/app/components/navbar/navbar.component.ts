@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { MatSnackBar, MatSlideToggleChange } from '@angular/material';
+import { MatSlideToggleChange, MatSnackBar } from '@angular/material';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { ApplicationData } from '../../shared/models/application.data';
-import { AppDataService } from '../../shared/services/app.data.service';
-import { ApplicationState } from '../../shared/services/app.state';
+import { BackendService } from '../../shared/services/backend.service';
+import { ApplicationState } from '../../shared/services/state.service';
 import { MessageUtils } from '../../shared/utils/message.utils';
 
 @Component({
@@ -22,7 +22,7 @@ export class NavbarComponent implements OnInit {
   public A: ApplicationData;
 
   constructor(
-    private service: AppDataService,
+    private service: BackendService,
     private state: ApplicationState,
     private snackBar: MatSnackBar,
     private sanitizer: DomSanitizer,

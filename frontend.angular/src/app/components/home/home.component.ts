@@ -4,8 +4,8 @@ import { Router } from '@angular/router';
 import * as moment from 'moment';
 import { debounceTime } from 'rxjs/operators';
 import { Document } from '../../shared/models/document.model';
-import { AppDataService } from '../../shared/services/app.data.service';
-import { ApplicationState } from '../../shared/services/app.state';
+import { BackendService } from '../../shared/services/backend.service';
+import { ApplicationState } from '../../shared/services/state.service';
 import { MessageUtils } from '../../shared/utils/message.utils';
 
 @Component({
@@ -26,7 +26,7 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private state: ApplicationState,
-    private service: AppDataService,
+    private service: BackendService,
     private router: Router,
     private snackBar: MatSnackBar) {
 

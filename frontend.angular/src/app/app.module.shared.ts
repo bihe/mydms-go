@@ -14,8 +14,8 @@ import { NavbarComponent } from './components/navbar/navbar.component';
 import { ConfirmationDialogComponent } from './shared/confirmation/confirmation.component';
 import { DateFormatPipe } from './shared/pipes/date.format';
 import { EllipsisPipe } from './shared/pipes/ellipsis';
-import { AppDataService } from './shared/services/app.data.service';
-import { ApplicationState } from './shared/services/app.state';
+import { BackendService } from './shared/services/backend.service';
+import { ApplicationState } from './shared/services/state.service';
 
 
 @NgModule({
@@ -42,6 +42,6 @@ export const sharedConfig: NgModule = {
         TagInputModule,
         NgxUploaderModule
     ],
-    providers: [ ApplicationState, AppDataService ],
+    providers: [ ApplicationState, BackendService ],
     entryComponents: [ ConfirmationDialogComponent ]
 };

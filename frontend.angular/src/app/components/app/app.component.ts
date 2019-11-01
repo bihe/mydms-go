@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ApplicationState } from '../../shared/services/app.state';
+import { ApplicationState } from '../../shared/services/state.service';
 
 @Component({
     selector: 'app-root',
