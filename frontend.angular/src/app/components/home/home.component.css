@@ -212,7 +212,7 @@
 }
 
 /* Smartphones (portrait) ----------- */
-@media only screen and (max-width : 400px) {
+@media only screen and (max-width : 420px) {
   /* Styles */
   .document {
     padding: 0px;
