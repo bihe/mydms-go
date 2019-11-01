@@ -329,11 +329,15 @@ func TestSaveUpdateDocument(t *testing.T) {
   "uploadFileToken":"-"
 }`
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	newReq := func(reader *strings.Reader) (request *http.Request, recorder *httptest.ResponseRecorder, context echo.Context) {
+		request = httptest.NewRequest(http.MethodPost, "/", reader)
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		recorder = httptest.NewRecorder()
+		context = e.NewContext(request, recorder)
+		return
+	}
 
+	_, rec, c := newReq(strings.NewReader(updateJSON))
 	docRepo := newDocRepo(con)
 	uploadRepo := newUploadRepo()
 	svc := newFileService()
@@ -359,10 +363,8 @@ func TestSaveUpdateDocument(t *testing.T) {
 	assert.Equal(t, Updated, result.Result)
 
 	// error get document - create new
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	_, rec, c = newReq(strings.NewReader(updateJSON))
+
 	docRepo.callCount = 0
 	docRepo.errMap[2] = errRaise
 	h = NewHandler(repos, svc, uploadConfig)
@@ -375,10 +377,8 @@ func TestSaveUpdateDocument(t *testing.T) {
 	delete(docRepo.errMap, 1)
 
 	// error save document
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(updateJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	_, rec, c = newReq(strings.NewReader(updateJSON))
+
 	docRepo.callCount = 0
 	docRepo.errMap[3] = errRaise
 	h = NewHandler(repos, svc, uploadConfig)
@@ -392,10 +392,11 @@ func TestSaveUpdateDocument(t *testing.T) {
 	// error bind
 	mock.ExpectBegin()
 	mock.ExpectRollback()
-	req = httptest.NewRequest(http.MethodPost, "/", nil)
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
+
 	err = h.SaveDocument(c)
 	if err == nil {
 		t.Errorf(errExp)
@@ -432,11 +433,15 @@ func TestSaveNewDocument(t *testing.T) {
 }`
 	doError := fmt.Errorf("error")
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	newReq := func() (request *http.Request, recorder *httptest.ResponseRecorder, context echo.Context) {
+		request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		recorder = httptest.NewRecorder()
+		context = e.NewContext(request, recorder)
+		return
+	}
 
+	_, rec, c := newReq()
 	docRepo := newDocRepo(con)
 	uploadRepo := newUploadRepo()
 	svc := newFileService()
@@ -476,10 +481,8 @@ func TestSaveNewDocument(t *testing.T) {
 
 	// error processUploadFile
 	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	_, rec, c = newReq()
+
 	mock.ExpectBegin()
 	mock.ExpectRollback()
 	uploadRepo.callCount = 0
@@ -492,10 +495,8 @@ func TestSaveNewDocument(t *testing.T) {
 
 	// error uploadfile
 	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	_, rec, c = newReq()
+
 	mock.ExpectBegin()
 	mock.ExpectRollback()
 	uploadConfig.UploadPath = "--"
@@ -507,10 +508,8 @@ func TestSaveNewDocument(t *testing.T) {
 
 	// error save backend
 	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	_, rec, c = newReq()
+
 	mock.ExpectBegin()
 	mock.ExpectRollback()
 	uploadConfig.UploadPath = tempPath
@@ -524,10 +523,8 @@ func TestSaveNewDocument(t *testing.T) {
 
 	// error uploadrepo delete - no rollback herer
 	ioutil.WriteFile(uploadFile, []byte(pdfPayload), 0644)
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(initialJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
+	_, rec, c = newReq()
+
 	mock.ExpectBegin()
 	mock.ExpectCommit()
 	uploadConfig.UploadPath = tempPath
@@ -547,15 +544,28 @@ func TestSaveNewDocument(t *testing.T) {
 }
 
 func TestSearchList(t *testing.T) {
+	var (
+		rec *httptest.ResponseRecorder
+		c   echo.Context
+	)
+
 	// Setup
 	e := echo.New()
 
-	req := httptest.NewRequest(http.MethodGet, "/?name=search", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	reqURL := "/?name=search"
 
-	c.SetParamNames("type")
-	c.SetParamValues("tags")
+	newReq := func(param, value string) (request *http.Request, recorder *httptest.ResponseRecorder, context echo.Context) {
+		request = httptest.NewRequest(http.MethodGet, reqURL, nil)
+		recorder = httptest.NewRecorder()
+		context = e.NewContext(request, recorder)
+
+		context.SetParamNames(param)
+		context.SetParamValues(value)
+
+		return
+	}
+
+	_, rec, c = newReq("type", "tags")
 
 	mdr := &mockRepository{}
 	svc := &mockFileService{}
@@ -582,13 +592,7 @@ func TestSearchList(t *testing.T) {
 	assert.Equal(t, 2, len(result.Result))
 
 	// senders
-	req = httptest.NewRequest(http.MethodGet, "/?name=search", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	c.SetParamNames("type")
-	c.SetParamValues("senders")
-
+	_, rec, c = newReq("type", "senders")
 	err = h.SearchList(c)
 	if err != nil {
 		t.Errorf("cannot search for lists: %v", err)
@@ -602,12 +606,7 @@ func TestSearchList(t *testing.T) {
 	assert.Equal(t, 2, len(result.Result))
 
 	// wrong search-type
-	req = httptest.NewRequest(http.MethodGet, "/?name=search", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	c.SetParamNames("type")
-	c.SetParamValues("something")
+	_, rec, c = newReq("type", "something")
 
 	err = h.SearchList(c)
 	if err == nil {
@@ -620,12 +619,7 @@ func TestSearchList(t *testing.T) {
 		DocRepo: mdr,
 	}
 	h = NewHandler(repos, svc, uploadConfig)
-	req = httptest.NewRequest(http.MethodGet, "/?name=search", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	c.SetParamNames("type")
-	c.SetParamValues("tags")
+	_, rec, c = newReq("type", "tags")
 
 	err = h.SearchList(c)
 	if err == nil {
