@@ -33,5 +33,12 @@
 	    "url": "ui",
         "path": "./ui",
         "spaIndexFile": "index.html"
+    },
+    "cors": {
+        "origins": ["*"],
+        "methods": ["GET", "POST"],
+        "headers": ["Accept", "Authorization"],
+        "credentials": true,
+        "maxAge": 500
     }
 }

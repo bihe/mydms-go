@@ -42,6 +42,13 @@ const configString = `{
         "bucket": "_BUCKET_NAME_",
         "key": "key",
         "secret": "secret"
+    },
+    "cors": {
+	"origins": ["*"],
+	"methods": ["GET", "POST"],
+	"headers": ["Accept", "Authorization"],
+	"credentials": true,
+	"maxAge": 500
     }
 }`
 
@@ -76,5 +83,11 @@ func TestConfigReader(t *testing.T) {
 	assert.Equal(t, "_BUCKET_NAME_", config.Store.Bucket)
 	assert.Equal(t, "key", config.Store.Key)
 	assert.Equal(t, "secret", config.Store.Secret)
+
+	assert.Equal(t, 500, config.Cors.MaxAge)
+	assert.Equal(t, true, config.Cors.AllowCredentials)
+	assert.Equal(t, []string{"Accept", "Authorization"}, config.Cors.AllowedHeaders)
+	assert.Equal(t, []string{"GET", "POST"}, config.Cors.AllowedMethods)
+	assert.Equal(t, []string{"*"}, config.Cors.AllowedOrigins)
 
 }

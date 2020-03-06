@@ -103,6 +103,14 @@ func setupAPIServer() (*echo.Echo, string) {
 
 	InitLogger(c.Log, e)
 
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     c.Cors.AllowedOrigins,
+		AllowHeaders:     c.Cors.AllowedHeaders,
+		AllowMethods:     c.Cors.AllowedMethods,
+		AllowCredentials: c.Cors.AllowCredentials,
+		MaxAge:           c.Cors.MaxAge,
+	}))
+
 	e.Use(middleware.Secure())
 	e.Use(security.JwtWithConfig(security.JwtOptions{
 		JwtSecret:  c.Sec.JwtSecret,

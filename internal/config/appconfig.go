@@ -14,6 +14,7 @@ type AppConfig struct {
 	FS    FileServer   `json:"fileServer"`
 	UP    UploadConfig `json:"upload"`
 	Store FileStore    `json:"filestore"`
+	Cors  CorsSettings `json:"cors"`
 }
 
 // Security settings for the application
@@ -67,6 +68,15 @@ type FileStore struct {
 	Bucket string
 	Key    string
 	Secret string
+}
+
+// CorsSettings specifies the used settings
+type CorsSettings struct {
+	AllowedOrigins   []string `json:"origins"`
+	AllowedMethods   []string `json:"methods"`
+	AllowedHeaders   []string `json:"headers"`
+	AllowCredentials bool     `json:"credentials"`
+	MaxAge           int      `json:"maxAge"`
 }
 
 // GetSettings returns application configuration values
