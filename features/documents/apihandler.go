@@ -31,17 +31,18 @@ const jsonTimeLayout = "2006-01-02T15:04:05+07:00"
 
 // Document is the json representation of the persistence entity
 type Document struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
-	AltID       string   `json:"alternativeId"`
-	Amount      float32  `json:"amount"`
-	Created     string   `json:"created"`
-	Modified    string   `json:"modified,omitempty"`
-	FileName    string   `json:"fileName"`
-	PreviewLink string   `json:"previewLink,omitempty"`
-	UploadToken string   `json:"uploadFileToken,omitempty"`
-	Tags        []string `json:"tags"`
-	Senders     []string `json:"senders"`
+	ID            string   `json:"id"`
+	Title         string   `json:"title"`
+	AltID         string   `json:"alternativeId"`
+	Amount        float32  `json:"amount"`
+	Created       string   `json:"created"`
+	Modified      string   `json:"modified,omitempty"`
+	FileName      string   `json:"fileName"`
+	PreviewLink   string   `json:"previewLink,omitempty"`
+	UploadToken   string   `json:"uploadFileToken,omitempty"`
+	Tags          []string `json:"tags"`
+	Senders       []string `json:"senders"`
+	InvoiceNumber string   `json:"invoicenumber"`
 }
 
 // PagedDcoument represents a paged result
@@ -518,6 +519,7 @@ func sanitize(policy *bluemonday.Policy, d *Document) *Document {
 	doc.FileName = policy.Sanitize(d.FileName)
 	doc.PreviewLink = policy.Sanitize(d.PreviewLink)
 	doc.UploadToken = policy.Sanitize(d.UploadToken)
+	doc.InvoiceNumber = policy.Sanitize(d.InvoiceNumber)
 
 	for _, t := range d.Tags {
 		doc.Tags = append(doc.Tags, policy.Sanitize(t))
@@ -556,16 +558,17 @@ func convert(policy *bluemonday.Policy, d DocumentEntity) Document {
 	}
 
 	doc := sanitize(policy, &Document{
-		ID:          d.ID,
-		Title:       d.Title,
-		AltID:       d.AltID,
-		Amount:      d.Amount,
-		Created:     cre,
-		Modified:    mod,
-		FileName:    d.FileName,
-		PreviewLink: preview,
-		Tags:        tags,
-		Senders:     senders,
+		ID:            d.ID,
+		Title:         d.Title,
+		AltID:         d.AltID,
+		Amount:        d.Amount,
+		Created:       cre,
+		Modified:      mod,
+		FileName:      d.FileName,
+		PreviewLink:   preview,
+		Tags:          tags,
+		Senders:       senders,
+		InvoiceNumber: d.InvoiceNumber,
 	})
 	return *doc
 }

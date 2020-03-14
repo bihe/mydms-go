@@ -17,16 +17,17 @@ import (
 
 // DocumentEntity represents a record in the persistence store
 type DocumentEntity struct {
-	ID          string         `db:"id"`
-	Title       string         `db:"title"`
-	FileName    string         `db:"filename"`
-	AltID       string         `db:"alternativeid"`
-	PreviewLink sql.NullString `db:"previewlink"`
-	Amount      float32        `db:"amount"`
-	Created     time.Time      `db:"created"`
-	Modified    sql.NullTime   `db:"modified"`
-	TagList     string         `db:"taglist"`
-	SenderList  string         `db:"senderlist"`
+	ID            string         `db:"id"`
+	Title         string         `db:"title"`
+	FileName      string         `db:"filename"`
+	AltID         string         `db:"alternativeid"`
+	PreviewLink   sql.NullString `db:"previewlink"`
+	Amount        float32        `db:"amount"`
+	Created       time.Time      `db:"created"`
+	Modified      sql.NullTime   `db:"modified"`
+	TagList       string         `db:"taglist"`
+	SenderList    string         `db:"senderlist"`
+	InvoiceNumber string         `db:"invoicenumber"`
 }
 
 // PagedDocuments wraps a list of documents and returns the total number of documents
@@ -131,7 +132,7 @@ func (rw *dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Docume
 	if doc.ID != "" {
 		var find DocumentEntity
 		// use the database logic for row-locking to prevent issues concurrently updating entries
-		err = rw.c.Get(&find, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=? FOR UPDATE", doc.ID)
+		err = rw.c.Get(&find, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified,invoicenumber FROM DOCUMENTS WHERE id=? FOR UPDATE", doc.ID)
 		if err != nil {
 			log.Warnf("could not get a Document by ID '%s' - a new entry will be created", doc.ID)
 			newEnty = true
@@ -145,11 +146,11 @@ func (rw *dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Docume
 		doc.ID = uuid.New().String()
 		doc.Created = time.Now().UTC()
 		doc.AltID = randomString(8)
-		r, err = atomic.NamedExec("INSERT INTO DOCUMENTS (id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created) VALUES (:id,:title,:filename,:alternativeid,:previewlink,:amount,:taglist,:senderlist,:created)", &doc)
+		r, err = atomic.NamedExec("INSERT INTO DOCUMENTS (id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,invoicenumber) VALUES (:id,:title,:filename,:alternativeid,:previewlink,:amount,:taglist,:senderlist,:created)", &doc)
 	} else {
 		m := sql.NullTime{Time: time.Now().UTC(), Valid: true}
 		doc.Modified = m
-		r, err = atomic.NamedExec("UPDATE DOCUMENTS SET title=:title,filename=:filename,alternativeid=:alternativeid,previewlink=:previewlink,amount=:amount,taglist=:taglist,senderlist=:senderlist,modified=:modified WHERE id=:id", &doc)
+		r, err = atomic.NamedExec("UPDATE DOCUMENTS SET title=:title,filename=:filename,alternativeid=:alternativeid,previewlink=:previewlink,amount=:amount,taglist=:taglist,senderlist=:senderlist,modified=:modified,invoicenumber=:invoicenumber WHERE id=:id", &doc)
 	}
 
 	if err != nil {
@@ -171,7 +172,7 @@ func (rw *dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Docume
 
 // Get retuns a document by the given id
 func (rw *dbRepository) Get(id string) (d DocumentEntity, err error) {
-	err = rw.c.Get(&d, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS WHERE id=?", id)
+	err = rw.c.Get(&d, "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified,invoicenumber FROM DOCUMENTS WHERE id=?", id)
 	if err != nil {
 		err = fmt.Errorf("cannot get document by id '%s': %v", id, err)
 		return
@@ -228,7 +229,7 @@ func (rw *dbRepository) Delete(id string, a persistence.Atomic) (err error) {
 // the slice of order-bys is used to defined the query sort-order
 func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, err error) {
 	var query string
-	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
+	q := "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified,invoicenumber FROM DOCUMENTS"
 	qc := "SELECT count(id) FROM DOCUMENTS"
 	where := "\nWHERE 1=1"
 	paging := ""
@@ -237,7 +238,7 @@ func (rw *dbRepository) Search(s DocSearch, order []OrderBy) (d PagedDocuments, 
 
 	// use the supplied search-object to create the query
 	if s.Title != "" {
-		where += "\nAND ( lower(title) LIKE :search OR lower(taglist) LIKE :search OR lower(senderlist) LIKE :search)"
+		where += "\nAND ( lower(title) LIKE :search OR lower(taglist) LIKE :search OR lower(senderlist) LIKE :search OR lower(invoicenumber) LIKE :search)"
 		arg["search"] = "%" + strings.ToLower(s.Title) + "%"
 	}
 	if s.Tag != "" {

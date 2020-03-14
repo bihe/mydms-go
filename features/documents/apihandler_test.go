@@ -328,7 +328,8 @@ func TestSaveUpdateDocument(t *testing.T) {
   "modified":null,
   "tags":["Tag1","Tag2"],
   "senders":["Sender1"],
-  "uploadFileToken":"-"
+  "uploadFileToken":"-",
+  "invoicenumber": "12345"
 }`
 
 	newReq := func(reader *strings.Reader) (request *http.Request, recorder *httptest.ResponseRecorder, context echo.Context) {
@@ -418,7 +419,8 @@ func TestSaveNewDocument(t *testing.T) {
   "modified":null,
   "tags":["Tag1","Tag2"],
   "senders":["Sender1","Sender2"],
-  "uploadFileToken":"ABC"
+  "uploadFileToken":"ABC",
+  "invoicenumber": "12345"
 }`
 	doError := fmt.Errorf("error")
 

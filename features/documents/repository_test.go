@@ -20,7 +20,7 @@ const existsErr = "error was not expected while checking for existence of item: 
 const expectedErr = "error expected"
 
 const stmtInsertDocs = "INSERT INTO DOCUMENTS"
-const queryDocs = "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified FROM DOCUMENTS"
+const queryDocs = "SELECT id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,modified,invoicenumber FROM DOCUMENTS"
 
 var Err = fmt.Errorf("error")
 
@@ -114,8 +114,8 @@ func TestSave(t *testing.T) {
 	item.ID = uuid.New().String()
 	item.AltID = d.AltID
 
-	rows := sqlmock.NewRows([]string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}).
-		AddRow(item.ID, item.Title, item.FileName, item.AltID, item.PreviewLink, item.Amount, item.TagList, item.SenderList, d.Created, nil)
+	rows := sqlmock.NewRows([]string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified", "invoicenumber"}).
+		AddRow(item.ID, item.Title, item.FileName, item.AltID, item.PreviewLink, item.Amount, item.TagList, item.SenderList, d.Created, nil, item.InvoiceNumber)
 	mock.ExpectQuery(queryDocs).WillReturnRows(rows)
 	mock.ExpectExec("UPDATE DOCUMENTS").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
@@ -133,6 +133,7 @@ func TestSave(t *testing.T) {
 	assert.Equal(t, item.SenderList, up.SenderList)
 	assert.Equal(t, d.Created, up.Created)
 	assert.True(t, up.Modified.Time.After(now))
+	assert.Equal(t, item.InvoiceNumber, up.InvoiceNumber)
 
 	// UPDATE with wrong ID
 	mock.ExpectBegin()
@@ -236,26 +237,27 @@ func TestRead(t *testing.T) {
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	rw := dbRepository{c}
-	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
+	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified", "invoicenumber"}
 	q := queryDocs
 	id := "id"
 
 	expected := DocumentEntity{
-		ID:          "id",
-		Title:       "title",
-		FileName:    "filename",
-		AltID:       "altid",
-		PreviewLink: sql.NullString{String: "previewlink", Valid: true},
-		Amount:      1.0,
-		Created:     time.Now().UTC(),
-		Modified:    sql.NullTime{},
-		TagList:     "tags",
-		SenderList:  "senders",
+		ID:            "id",
+		Title:         "title",
+		FileName:      "filename",
+		AltID:         "altid",
+		PreviewLink:   sql.NullString{String: "previewlink", Valid: true},
+		Amount:        1.0,
+		Created:       time.Now().UTC(),
+		Modified:      sql.NullTime{},
+		TagList:       "tags",
+		SenderList:    "senders",
+		InvoiceNumber: "invoicenumber",
 	}
 
 	// success
 	rows := sqlmock.NewRows(columns).
-		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified)
+		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified, expected.InvoiceNumber)
 	mock.ExpectQuery(q).WithArgs(id).WillReturnRows(rows)
 
 	item, err := rw.Get(id)
@@ -273,6 +275,7 @@ func TestRead(t *testing.T) {
 	assert.Equal(t, expected.SenderList, item.SenderList)
 	assert.Equal(t, expected.Created, item.Created)
 	assert.Equal(t, expected.Modified, item.Modified)
+	assert.Equal(t, expected.InvoiceNumber, item.InvoiceNumber)
 
 	// no result
 	rows = sqlmock.NewRows(columns)
@@ -420,21 +423,22 @@ func TestSearch(t *testing.T) {
 	dbx := sqlx.NewDb(db, "mysql")
 	c := persistence.NewFromDB(dbx)
 	rw := dbRepository{c}
-	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified"}
+	columns := []string{"id", "title", "filename", "alternativeid", "previewlink", "amount", "taglist", "senderlist", "created", "modified", "invoicenumber"}
 
 	qc := "SELECT count\\(id\\) FROM DOCUMENTS"
 
 	expected := DocumentEntity{
-		ID:          "id",
-		Title:       "title",
-		FileName:    "filename",
-		AltID:       "altid",
-		PreviewLink: sql.NullString{String: "previewlink", Valid: true},
-		Amount:      1.0,
-		Created:     time.Now().UTC(),
-		Modified:    sql.NullTime{},
-		TagList:     "tags",
-		SenderList:  "senders",
+		ID:            "id",
+		Title:         "title",
+		FileName:      "filename",
+		AltID:         "altid",
+		PreviewLink:   sql.NullString{String: "previewlink", Valid: true},
+		Amount:        1.0,
+		Created:       time.Now().UTC(),
+		Modified:      sql.NullTime{},
+		TagList:       "tags",
+		SenderList:    "senders",
+		InvoiceNumber: "invoicenumber",
 	}
 
 	// success
@@ -442,7 +446,7 @@ func TestSearch(t *testing.T) {
 	mock.ExpectQuery(qc).WillReturnRows(cr)
 
 	dr := sqlmock.NewRows(columns).
-		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified)
+		AddRow(expected.ID, expected.Title, expected.FileName, expected.AltID, expected.PreviewLink, expected.Amount, expected.TagList, expected.SenderList, expected.Created, expected.Modified, expected.InvoiceNumber)
 	mock.ExpectQuery(queryDocs).WillReturnRows(dr)
 
 	ts := time.Now().UTC()
@@ -482,6 +486,7 @@ func TestSearch(t *testing.T) {
 	assert.Equal(t, expected.SenderList, item.SenderList)
 	assert.Equal(t, expected.Created, item.Created)
 	assert.Equal(t, expected.Modified, item.Modified)
+	assert.Equal(t, expected.InvoiceNumber, item.InvoiceNumber)
 
 	// failure1
 	mock.ExpectQuery(qc).WillReturnError(fmt.Errorf("could not get count"))
