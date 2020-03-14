@@ -544,8 +544,12 @@ func convert(policy *bluemonday.Policy, d DocumentEntity) Document {
 		// missing DB value for preview-link
 		preview = base64.StdEncoding.EncodeToString([]byte(d.FileName))
 	}
-	tags = strings.Split(d.TagList, ";")
-	senders = strings.Split(d.SenderList, ";")
+	if d.TagList != "" {
+		tags = strings.Split(d.TagList, ";")
+	}
+	if d.SenderList != "" {
+		senders = strings.Split(d.SenderList, ";")
+	}
 	cre = d.Created.Format(jsonTimeLayout)
 	if d.Modified.Valid {
 		mod = d.Modified.Time.Format(jsonTimeLayout)
