@@ -358,6 +358,7 @@ func (h *Handler) SaveDocument(c echo.Context) (err error) {
 			doc.Amount = d.Amount
 			doc.SenderList = senderList
 			doc.TagList = tagList
+			doc.InvoiceNumber = sql.NullString{String: d.InvoiceNumber, Valid: true}
 		}
 	}
 
@@ -498,12 +499,13 @@ func (h *Handler) startAtomic(c echo.Context) (persistence.Atomic, error) {
 
 func initDocument(d *Document, sList, tList string) DocumentEntity {
 	return DocumentEntity{
-		Title:       d.Title,
-		FileName:    d.FileName,
-		PreviewLink: sql.NullString{String: base64.StdEncoding.EncodeToString([]byte(d.FileName)), Valid: true},
-		Amount:      d.Amount,
-		SenderList:  sList,
-		TagList:     tList,
+		Title:         d.Title,
+		FileName:      d.FileName,
+		PreviewLink:   sql.NullString{String: base64.StdEncoding.EncodeToString([]byte(d.FileName)), Valid: true},
+		Amount:        d.Amount,
+		SenderList:    sList,
+		TagList:       tList,
+		InvoiceNumber: sql.NullString{String: d.InvoiceNumber, Valid: true},
 	}
 }
 
