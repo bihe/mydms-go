@@ -32,11 +32,6 @@ const configString = `{
 	"filePath": "/temp/file",
 	"logLevel": "debug"
     },
-    "fileServer": {
-	"url": "ui",
-        "path": "./ui",
-        "spaIndexFile": "index.html"
-    },
     "filestore": {
         "region": "_REGION_",
         "bucket": "_BUCKET_NAME_",
@@ -73,10 +68,6 @@ func TestConfigReader(t *testing.T) {
 
 	assert.Equal(t, "/temp/file", config.Log.FilePath)
 	assert.Equal(t, "debug", config.Log.LogLevel)
-
-	assert.Equal(t, "ui", config.FS.URL)
-	assert.Equal(t, "./ui", config.FS.Path)
-	assert.Equal(t, "index.html", config.FS.SpaIndexFile)
 
 	assert.Equal(t, "_REGION_", config.Store.Region)
 	assert.Equal(t, "_BUCKET_NAME_", config.Store.Bucket)

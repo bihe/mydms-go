@@ -118,16 +118,16 @@ func TestGetDocumentByID(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
 
 	mdr := &mockRepository{}
 	svc := &mockFileService{}
-
 	repos := Repositories{
 		DocRepo: mdr,
 	}
-
 	h := NewHandler(repos, svc, uploadConfig)
+
+	e.GET("/:id", h.GetDocumentByID) // this is necessary to supply parameters
+	c := e.NewContext(req, rec)
 	c.SetParamNames(ID)
 	c.SetParamValues(ID)
 
@@ -172,7 +172,6 @@ func TestDeleteDocumentByID(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodDelete, "/", nil)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
 
 	mdr := newDocRepo(con)
 	svc := newFileService()
@@ -181,6 +180,9 @@ func TestDeleteDocumentByID(t *testing.T) {
 	}
 
 	h := NewHandler(repos, svc, uploadConfig)
+
+	e.GET("/:id", h.DeleteDocumentByID) // this is necessary to supply parameters
+	c := e.NewContext(req, rec)
 	c.SetParamNames(ID)
 	c.SetParamValues(ID)
 
@@ -389,19 +391,6 @@ func TestSaveUpdateDocument(t *testing.T) {
 		t.Errorf(errExp)
 	}
 
-	// error bind
-	mock.ExpectBegin()
-	mock.ExpectRollback()
-	req := httptest.NewRequest(http.MethodPost, "/", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-
-	err = h.SaveDocument(c)
-	if err == nil {
-		t.Errorf(errExp)
-	}
-
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf(expectations, err)
@@ -554,18 +543,17 @@ func TestSearchList(t *testing.T) {
 
 	reqURL := "/?name=search"
 
-	newReq := func(param, value string) (request *http.Request, recorder *httptest.ResponseRecorder, context echo.Context) {
+	newReq := func(param, value string, h func(c echo.Context) (err error)) (request *http.Request, recorder *httptest.ResponseRecorder, context echo.Context) {
 		request = httptest.NewRequest(http.MethodGet, reqURL, nil)
 		recorder = httptest.NewRecorder()
-		context = e.NewContext(request, recorder)
 
+		e.GET("/:type", h) // this is necessary to supply parameters
+		context = e.NewContext(request, recorder)
 		context.SetParamNames(param)
 		context.SetParamValues(value)
 
 		return
 	}
-
-	_, rec, c = newReq("type", "tags")
 
 	mdr := &mockRepository{}
 	svc := &mockFileService{}
@@ -574,6 +562,7 @@ func TestSearchList(t *testing.T) {
 		DocRepo: mdr,
 	}
 	h := NewHandler(repos, svc, uploadConfig)
+	_, rec, c = newReq("type", "tags", h.SearchList)
 
 	var result SearchResult
 
@@ -592,7 +581,7 @@ func TestSearchList(t *testing.T) {
 	assert.Equal(t, 2, len(result.Result))
 
 	// senders
-	_, rec, c = newReq("type", "senders")
+	_, rec, c = newReq("type", "senders", h.SearchList)
 	err = h.SearchList(c)
 	if err != nil {
 		t.Errorf("cannot search for lists: %v", err)
@@ -606,7 +595,7 @@ func TestSearchList(t *testing.T) {
 	assert.Equal(t, 2, len(result.Result))
 
 	// wrong search-type
-	_, rec, c = newReq("type", "something")
+	_, rec, c = newReq("type", "something", h.SearchList)
 
 	err = h.SearchList(c)
 	if err == nil {
@@ -619,7 +608,7 @@ func TestSearchList(t *testing.T) {
 		DocRepo: mdr,
 	}
 	h = NewHandler(repos, svc, uploadConfig)
-	_, rec, c = newReq("type", "tags")
+	_, rec, c = newReq("type", "tags", h.SearchList)
 
 	err = h.SearchList(c)
 	if err == nil {

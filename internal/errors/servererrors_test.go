@@ -82,7 +82,7 @@ func TestErrorHandler(t *testing.T) {
 				return
 			}
 
-			s = string(rec.Body.Bytes())
+			s = rec.Body.String()
 			assert.NotEqual(t, "", s)
 			assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &pd))
 

@@ -13,7 +13,6 @@ import (
 	"github.com/bihe/mydms/internal/errors"
 	"github.com/bihe/mydms/internal/persistence"
 	"github.com/bihe/mydms/internal/security"
-	"github.com/bihe/mydms/internal/spa"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -21,7 +20,7 @@ import (
 	_ "github.com/bihe/mydms/docs"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
-	sec "github.com/bihe/commons-go/security"
+	sec "golang.binggl.net/commons/security"
 )
 
 var (
@@ -58,7 +57,7 @@ func main() {
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 10 seconds.
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -124,12 +123,6 @@ func setupAPIServer() (*echo.Echo, string) {
 		RedirectURL:   c.Sec.LoginRedirect,
 		CacheDuration: c.Sec.CacheDuration,
 	}))
-	e.Use(spa.WithConfig(spa.Config{
-		Paths:             []string{"/" + c.FS.URL},
-		FilePath:          c.FS.Path + "/" + c.FS.SpaIndexFile,
-		RedirectEmptyPath: true,
-	}))
-	e.Static(c.FS.URL, c.FS.Path)
 
 	// persistence store && application version
 	con := persistence.NewConn(c.DB.ConnStr)
@@ -137,7 +130,9 @@ func setupAPIServer() (*echo.Echo, string) {
 		Version: Version,
 		Build:   Build,
 	}
-	registerRoutes(e, con, c, version)
+	if err := registerRoutes(e, con, c, version); err != nil {
+		panic(fmt.Sprintf("error: %v", err))
+	}
 
 	// enable swagger for API endpoints
 	e.GET("/swagger/*", echoSwagger.WrapHandler)

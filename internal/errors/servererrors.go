@@ -121,7 +121,7 @@ func ErrServerError(err ServerError) *ProblemDetail {
 func ErrRedirectError(err RedirectError) *ProblemDetail {
 	return &ProblemDetail{
 		Type:     t,
-		Title:    "a redirect is necessary",
+		Title:    "authentication requires a redirect",
 		Status:   err.Status,
 		Detail:   err.Error(),
 		Instance: err.URL,
@@ -138,13 +138,13 @@ func CustomErrorHandler(err error, c echo.Context) {
 
 	if notfound, ok := err.(NotFoundError); ok {
 		e = ErrNotFound(notfound)
-		c.JSON(e.Status, e)
+		_ = c.JSON(e.Status, e)
 		return
 	}
 
 	if badrequest, ok := err.(BadRequestError); ok {
 		e = ErrBadRequest(badrequest)
-		c.JSON(e.Status, e)
+		_ = c.JSON(e.Status, e)
 		return
 	}
 
@@ -152,15 +152,13 @@ func CustomErrorHandler(err error, c echo.Context) {
 		e = ErrRedirectError(redirect)
 		switch content {
 		case internal.HTML:
-			c.Redirect(http.StatusTemporaryRedirect, redirect.URL)
-			break
+			_ = c.Redirect(http.StatusTemporaryRedirect, redirect.URL)
 		default:
 			status := http.StatusTemporaryRedirect
 			if e.Status > 0 {
 				status = e.Status
 			}
-			c.JSON(status, e)
-			break
+			_ = c.JSON(status, e)
 		}
 		return
 
@@ -168,5 +166,5 @@ func CustomErrorHandler(err error, c echo.Context) {
 
 	// any other case we just print an internal server error
 	e = ErrServerError(ServerError{Err: err, Request: c.Request()})
-	c.JSON(e.Status, e)
+	_ = c.JSON(e.Status, e)
 }

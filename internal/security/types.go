@@ -1,7 +1,7 @@
 package security
 
 import (
-	sec "github.com/bihe/commons-go/security"
+	sec "golang.binggl.net/commons/security"
 	"github.com/labstack/echo/v4"
 )
 

@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 
-	sec "github.com/bihe/commons-go/security"
+	sec "golang.binggl.net/commons/security"
 	"github.com/bihe/mydms/internal/errors"
 )
 

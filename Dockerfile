@@ -1,11 +1,3 @@
-## fronted build-phase
-## --------------------------------------------------------------------------
-FROM node:lts-alpine AS FRONTEND-BUILD
-WORKDIR /frontend-build
-COPY ./frontend.angular .
-RUN npm install -g @angular/cli@latest && npm install && npm run build -- --prod --base-href /ui/
-## --------------------------------------------------------------------------
-
 ## backend build-phase
 ## --------------------------------------------------------------------------
 FROM golang:alpine AS BACKEND-BUILD
@@ -29,12 +21,10 @@ RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s -X main.Version=${VERSION}-
 FROM alpine:latest
 LABEL author="henrik@binggl.net"
 WORKDIR /opt/mydms
-RUN mkdir -p /opt/mydms/uploads && mkdir -p /opt/mydms/ui && mkdir -p /opt/mydms/etc && mkdir -p /opt/mydms/logs
+RUN mkdir -p /opt/mydms/uploads && mkdir -p /opt/mydms/etc && mkdir -p /opt/mydms/logs
 COPY --from=BACKEND-BUILD /backend-build/mydms.api /opt/mydms
-COPY --from=FRONTEND-BUILD /frontend-build/dist  /opt/mydms/ui
 RUN ls -l /opt/mydms
 RUN ls -l /opt/mydms/etc
-RUN ls -l /opt/mydms/ui
 
 EXPOSE 3000
 

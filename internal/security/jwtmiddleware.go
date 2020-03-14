@@ -10,7 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	sec "github.com/bihe/commons-go/security"
+	sec "golang.binggl.net/commons/security"
 	"github.com/bihe/mydms/internal/errors"
 )
 

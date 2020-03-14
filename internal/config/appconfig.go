@@ -11,7 +11,6 @@ type AppConfig struct {
 	Sec   Security     `json:"security"`
 	DB    Database     `json:"database"`
 	Log   LogConfig    `json:"logging"`
-	FS    FileServer   `json:"fileServer"`
 	UP    UploadConfig `json:"upload"`
 	Store FileStore    `json:"filestore"`
 	Cors  CorsSettings `json:"cors"`
@@ -43,13 +42,6 @@ type Claim struct {
 type LogConfig struct {
 	FilePath string `json:"filePath"`
 	LogLevel string `json:"logLevel"`
-}
-
-// FileServer defines the settings for serving static files
-type FileServer struct {
-	URL          string `json:"url"`
-	Path         string `json:"path"`
-	SpaIndexFile string `json:"spaIndexFile"`
 }
 
 // UploadConfig defines relevant values for the upload logic

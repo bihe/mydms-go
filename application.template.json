@@ -29,11 +29,6 @@
         "filePath": "./_logs/bookmars-api.log",
         "logLevel": "info"
     },
-    "fileServer": {
-	    "url": "ui",
-        "path": "./ui",
-        "spaIndexFile": "index.html"
-    },
     "cors": {
         "origins": ["*"],
         "methods": ["GET", "POST"],
