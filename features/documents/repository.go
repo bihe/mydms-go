@@ -27,7 +27,7 @@ type DocumentEntity struct {
 	Modified      sql.NullTime   `db:"modified"`
 	TagList       string         `db:"taglist"`
 	SenderList    string         `db:"senderlist"`
-	InvoiceNumber string         `db:"invoicenumber"`
+	InvoiceNumber sql.NullString `db:"invoicenumber"`
 }
 
 // PagedDocuments wraps a list of documents and returns the total number of documents

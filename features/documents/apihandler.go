@@ -42,7 +42,7 @@ type Document struct {
 	UploadToken   string   `json:"uploadFileToken,omitempty"`
 	Tags          []string `json:"tags"`
 	Senders       []string `json:"senders"`
-	InvoiceNumber string   `json:"invoicenumber"`
+	InvoiceNumber string   `json:"invoiceNumber,omitempty"`
 }
 
 // PagedDcoument represents a paged result
@@ -557,6 +557,10 @@ func convert(policy *bluemonday.Policy, d DocumentEntity) Document {
 		mod = d.Modified.Time.Format(jsonTimeLayout)
 	}
 
+	inv := ""
+	if d.InvoiceNumber.Valid {
+		inv = d.InvoiceNumber.String
+	}
 	doc := sanitize(policy, &Document{
 		ID:            d.ID,
 		Title:         d.Title,
@@ -568,7 +572,7 @@ func convert(policy *bluemonday.Policy, d DocumentEntity) Document {
 		PreviewLink:   preview,
 		Tags:          tags,
 		Senders:       senders,
-		InvoiceNumber: d.InvoiceNumber,
+		InvoiceNumber: inv,
 	})
 	return *doc
 }

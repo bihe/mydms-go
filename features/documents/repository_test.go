@@ -252,7 +252,7 @@ func TestRead(t *testing.T) {
 		Modified:      sql.NullTime{},
 		TagList:       "tags",
 		SenderList:    "senders",
-		InvoiceNumber: "invoicenumber",
+		InvoiceNumber: sql.NullString{String: "invoicenumber", Valid: true},
 	}
 
 	// success
@@ -438,7 +438,7 @@ func TestSearch(t *testing.T) {
 		Modified:      sql.NullTime{},
 		TagList:       "tags",
 		SenderList:    "senders",
-		InvoiceNumber: "invoicenumber",
+		InvoiceNumber: sql.NullString{String: "invoicenumber", Valid: true},
 	}
 
 	// success
