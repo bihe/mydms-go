@@ -146,7 +146,7 @@ func (rw *dbRepository) Save(doc DocumentEntity, a persistence.Atomic) (d Docume
 		doc.ID = uuid.New().String()
 		doc.Created = time.Now().UTC()
 		doc.AltID = randomString(8)
-		r, err = atomic.NamedExec("INSERT INTO DOCUMENTS (id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,invoicenumber) VALUES (:id,:title,:filename,:alternativeid,:previewlink,:amount,:taglist,:senderlist,:created)", &doc)
+		r, err = atomic.NamedExec("INSERT INTO DOCUMENTS (id,title,filename,alternativeid,previewlink,amount,taglist,senderlist,created,invoicenumber) VALUES (:id,:title,:filename,:alternativeid,:previewlink,:amount,:taglist,:senderlist,:created,:invoicenumber)", &doc)
 	} else {
 		m := sql.NullTime{Time: time.Now().UTC(), Valid: true}
 		doc.Modified = m
